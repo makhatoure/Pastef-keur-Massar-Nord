@@ -1,114 +1,66 @@
 import { NextResponse } from 'next/server';
-import { getDatabase, saveDatabase, calculateStock, addAuditLog } from '@/lib/db';
-import { StockEntry } from '@/lib/types';
+import { supabase } from '@/lib/db';
 
-// Ajout d'une nouvelle entrée de stock
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { quantity, reason, adminName } = body;
 
-    if (!adminName) {
-      return NextResponse.json({ success: false, message: 'Action réservée à l\'administrateur.' }, { status: 403 });
-    }
-
     const qty = parseInt(quantity, 10);
     if (isNaN(qty) || qty <= 0) {
-      return NextResponse.json({ success: false, message: 'La quantité doit être un nombre positif.' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'La quantité doit être supérieure à 0.' }, { status: 400 });
     }
 
-    if (!reason || !reason.trim()) {
-      return NextResponse.json({ success: false, message: 'Un motif ou bon de livraison est requis.' }, { status: 400 });
-    }
-
-    const db = getDatabase();
-
-    const newEntry: StockEntry = {
-      id: `entry-${Date.now()}`,
-      date: new Date().toISOString(),
+    const { data, error } = await supabase.from('stock_entries').insert([{
       quantity: qty,
-      reason: reason.trim(),
-      addedBy: adminName,
-    };
+      reason: (reason || 'Livraison supplémentaire').trim(),
+      added_by: adminName || 'Administrateur',
+    }]).select().single();
 
-    db.stock.entries.push(newEntry);
-    addAuditLog(
-      db,
-      adminName,
-      'ENTREE_STOCK',
-      `Ajout de ${qty} moustiquaires au stock. Motif: ${reason.trim()}`
-    );
+    if (error) {
+      return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    }
 
-    saveDatabase(db);
-    const stockStats = calculateStock(db);
+    await supabase.from('audit_logs').insert([{
+      user_name: adminName || 'Administrateur',
+      action: 'ENTREE_STOCK',
+      details: `Ajout de ${qty} moustiquaires au stock (${reason})`,
+    }]);
 
     return NextResponse.json({
       success: true,
-      entry: newEntry,
-      stockStats,
-      message: `${qty} moustiquaire(s) ajoutée(s) au stock avec succès.`,
+      entry: data,
+      message: `${qty} moustiquaires ajoutées avec succès au stock.`,
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
 
-// Mise à jour de la configuration de base (Stock initial ou quantité par défaut podium)
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { initialStock, defaultEveningQty, adminName, reason } = body;
+    const { initialStock, defaultEveningQty, adminName } = body;
 
-    if (!adminName) {
-      return NextResponse.json({ success: false, message: 'Action réservée à l\'administrateur.' }, { status: 403 });
+    const updates: any = {};
+    if (initialStock !== undefined) updates.initial_stock = parseInt(initialStock, 10);
+    if (defaultEveningQty !== undefined) updates.default_evening_qty = parseInt(defaultEveningQty, 10);
+
+    const { error } = await supabase.from('stock_state').update(updates).eq('id', 1);
+
+    if (error) {
+      return NextResponse.json({ success: false, message: error.message }, { status: 500 });
     }
 
-    const db = getDatabase();
+    await supabase.from('audit_logs').insert([{
+      user_name: adminName || 'Administrateur',
+      action: 'CONFIG_STOCK',
+      details: `Mise à jour configuration stock: initial=${initialStock || '-'}, defaultQty=${defaultEveningQty || '-'}`,
+    }]);
 
-    if (initialStock !== undefined) {
-      const initQty = parseInt(initialStock, 10);
-      if (isNaN(initQty) || initQty < 0) {
-        return NextResponse.json({ success: false, message: 'Le stock initial doit être un nombre positif.' }, { status: 400 });
-      }
-
-      // Vérifier que le stock restant ne devienne pas négatif
-      const oldInitial = db.stock.initialStock;
-      db.stock.initialStock = initQty;
-      const newCalc = calculateStock(db);
-
-      if (newCalc.remaining < 0) {
-        db.stock.initialStock = oldInitial;
-        return NextResponse.json({
-          success: false,
-          message: `Impossible de réduire le stock initial à ${initQty} car le stock restant deviendrait négatif (${newCalc.remaining}).`,
-        }, { status: 400 });
-      }
-
-      addAuditLog(
-        db,
-        adminName,
-        'MODIF_STOCK_INITIAL',
-        `Stock initial modifié de ${oldInitial} à ${initQty}. Motif: ${reason || 'Ajustement organisationnel'}`
-      );
-    }
-
-    if (defaultEveningQty !== undefined) {
-      const defQty = parseInt(defaultEveningQty, 10);
-      if (defQty > 0) {
-        db.defaultEveningQty = defQty;
-        addAuditLog(db, adminName, 'CONFIG_QUANTITE_SOIR', `Quantité par défaut par bénéficiaire du soir fixée à ${defQty}`);
-      }
-    }
-
-    saveDatabase(db);
-    const stockStats = calculateStock(db);
-
-    return NextResponse.json({
-      success: true,
-      stockStats,
-      defaultEveningQty: db.defaultEveningQty,
-      message: 'Paramètres du stock mis à jour.',
-    });
+    return NextResponse.json({ success: true, message: 'Paramètres mis à jour.' });
   } catch (error: any) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }

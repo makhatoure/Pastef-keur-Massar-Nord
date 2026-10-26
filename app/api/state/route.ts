@@ -1,72 +1,77 @@
 import { NextResponse } from 'next/server';
-import { getDatabase, calculateStock } from '@/lib/db';
+import { getSupabaseState, getDatabase, calculateStock } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
+    const supabaseData = await getSupabaseState();
+    if (supabaseData) {
+      // Calcul des répartitions par quartier
+      const morningByNeighborhood: Record<string, number> = {};
+      supabaseData.morningDonations.forEach((d: any) => {
+        const q = d.neighborhood?.trim() || 'Non spécifié';
+        morningByNeighborhood[q] = (morningByNeighborhood[q] || 0) + 1;
+      });
+
+      const eveningCensusByNeighborhood: Record<string, number> = {};
+      const eveningServedByNeighborhood: Record<string, number> = {};
+      supabaseData.eveningBeneficiaries.forEach((b: any) => {
+        const q = b.neighborhood?.trim() || 'Non spécifié';
+        eveningCensusByNeighborhood[q] = (eveningCensusByNeighborhood[q] || 0) + 1;
+        if (b.status === 'SERVI') {
+          eveningServedByNeighborhood[q] = (eveningServedByNeighborhood[q] || 0) + 1;
+        }
+      });
+
+      const totalCensus = supabaseData.eveningBeneficiaries.length;
+      const servedCount = supabaseData.eveningBeneficiaries.filter((b: any) => b.status === 'SERVI').length;
+
+      return NextResponse.json({
+        success: true,
+        stock: supabaseData.stock,
+        stats: {
+          morning: {
+            beneficiariesServed: supabaseData.morningDonations.length,
+            mosquitoNetsDistributed: supabaseData.stock.morningDistributed,
+            byNeighborhood: morningByNeighborhood,
+          },
+          evening: {
+            totalCensus,
+            servedCount,
+            pendingCount: totalCensus - servedCount,
+            mosquitoNetsDistributed: supabaseData.stock.eveningDistributed,
+            censusByNeighborhood: eveningCensusByNeighborhood,
+            servedByNeighborhood: eveningServedByNeighborhood,
+          },
+          global: {
+            totalMorning: supabaseData.stock.morningDistributed,
+            totalEvening: supabaseData.stock.eveningDistributed,
+            totalDistributed: supabaseData.stock.totalDistributed,
+            remainingStock: supabaseData.stock.remaining,
+            initialStock: supabaseData.stock.initial,
+            entriesTotal: supabaseData.stock.entriesTotal,
+            isClosed: supabaseData.stock.isClosed,
+          },
+        },
+        morningDonations: supabaseData.morningDonations,
+        eveningBeneficiaries: supabaseData.eveningBeneficiaries,
+        auditLogs: supabaseData.auditLogs,
+        users: supabaseData.users,
+        defaultEveningQty: supabaseData.defaultEveningQty,
+      });
+    }
+
+    // Fallback local
     const db = getDatabase();
     const stockStats = calculateStock(db);
-
-    // Statistiques détaillées Matin
-    const morningConfirmed = db.morningDonations.filter(d => d.confirmed);
-    const morningByNeighborhood: Record<string, number> = {};
-    morningConfirmed.forEach(d => {
-      const q = d.neighborhood?.trim() || 'Non spécifié';
-      morningByNeighborhood[q] = (morningByNeighborhood[q] || 0) + 1;
-    });
-
-    // Statistiques détaillées Soir
-    const eveningTotalCensus = db.eveningBeneficiaries.length;
-    const eveningServed = db.eveningBeneficiaries.filter(b => b.status === 'SERVI');
-    const eveningPending = db.eveningBeneficiaries.filter(b => b.status === 'EN_ATTENTE');
-    
-    const eveningCensusByNeighborhood: Record<string, number> = {};
-    const eveningServedByNeighborhood: Record<string, number> = {};
-    
-    db.eveningBeneficiaries.forEach(b => {
-      const q = b.neighborhood?.trim() || 'Non spécifié';
-      eveningCensusByNeighborhood[q] = (eveningCensusByNeighborhood[q] || 0) + 1;
-      if (b.status === 'SERVI') {
-        eveningServedByNeighborhood[q] = (eveningServedByNeighborhood[q] || 0) + 1;
-      }
-    });
-
     return NextResponse.json({
       success: true,
-      stock: {
-        ...db.stock,
-        ...stockStats,
-      },
-      stats: {
-        morning: {
-          beneficiariesServed: morningConfirmed.length,
-          mosquitoNetsDistributed: stockStats.morningDistributed,
-          byNeighborhood: morningByNeighborhood,
-        },
-        evening: {
-          totalCensus: eveningTotalCensus,
-          servedCount: eveningServed.length,
-          pendingCount: eveningPending.length,
-          mosquitoNetsDistributed: stockStats.eveningDistributed,
-          censusByNeighborhood: eveningCensusByNeighborhood,
-          servedByNeighborhood: eveningServedByNeighborhood,
-        },
-        global: {
-          totalMorning: stockStats.morningDistributed,
-          totalEvening: stockStats.eveningDistributed,
-          totalDistributed: stockStats.totalDistributed,
-          remainingStock: stockStats.remaining,
-          initialStock: stockStats.initial,
-          entriesTotal: stockStats.entriesTotal,
-          isClosed: stockStats.isClosed,
-        },
-      },
+      stock: { ...db.stock, ...stockStats },
       morningDonations: db.morningDonations,
       eveningBeneficiaries: db.eveningBeneficiaries,
-      auditLogs: db.auditLogs.slice(0, 100),
+      auditLogs: db.auditLogs,
       users: db.users.map(({ pin, ...safe }) => safe),
-      defaultEveningQty: db.defaultEveningQty || 2,
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
