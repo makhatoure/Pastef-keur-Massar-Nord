@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Cellule Pastef quartiers: S.M.SY 1/ D.S.2.E — Gestion Don de Sang & Podium</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Supabase JS Client v2 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- jsPDF & XLSX -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    body { -webkit-tap-highlight-color: transparent; }
+    input, button, select, textarea { touch-action: manipulation; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen pb-20">
+
+  <!-- ================= MODALE DE CONNEXION ================= -->
+  <div id="loginModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-slate-200">
+      <div class="bg-emerald-700 text-white p-5 text-center">
+        <div class="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-2 font-black text-2xl">
+          P
+        </div>
+        <h2 class="text-base font-bold tracking-tight">Cellule Pastef quartiers: S.M.SY 1/ D.S.2.E</h2>
+        <p class="text-emerald-100 text-xs mt-1">Plateforme en ligne — Don de Sang & Podium</p>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <div class="space-y-2">
+          <p class="text-xs font-semibold text-slate-600">Sélectionner un profil d'accès :</p>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" onclick="selectLogin('admin', '2026')" id="btn-login-admin" class="p-2 rounded-xl border border-emerald-600 bg-emerald-50 text-left text-xs font-bold text-emerald-900">
+              🛡️ Admin
+              <div class="text-[10px] text-slate-500 font-normal">PIN: 2026</div>
+            </button>
+            <button type="button" onclick="selectLogin('agent1', '1234')" id="btn-login-agent" class="p-2 rounded-xl border border-slate-200 bg-slate-50 text-left text-xs font-medium text-slate-700">
+              👤 Agent
+              <div class="text-[10px] text-slate-500 font-normal">PIN: 1234</div>
+            </button>
+          </div>
+        </div>
+
+        <div id="loginError" class="hidden p-2.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl"></div>
+
+        <form onsubmit="handleLoginSubmit(event)" class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">Identifiant</label>
+            <input type="text" id="loginUsername" value="admin" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">Code PIN</label>
+            <input type="password" id="loginPin" value="2026" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg font-mono">
+          </div>
+          <button type="submit" id="loginBtn" class="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm rounded-xl shadow-md transition">
+            Accéder à la plateforme
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= EN-TÊTE PRINCIPAL ================= -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+    <div class="max-w-4xl mx-auto px-3 py-2.5 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-emerald-700 text-white font-black flex items-center justify-center text-sm shadow-xs">
+          P
+        </div>
+        <div>
+          <h1 class="text-xs sm:text-sm font-bold text-slate-900 leading-tight">
+            Cellule Pastef quartiers: S.M.SY 1/ D.S.2.E
+          </h1>
+          <p class="text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            Connecté à Supabase Cloud (Temps Réel)
+          </p>
+        </div>
+      </div>
+
+      <!-- Badges -->
+      <div class="flex items-center gap-2">
+        <div id="stockBadge" class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
+          Stock : <span id="headerStockVal">...</span>
+        </div>
+        <div id="userBadge" class="hidden sm:flex items-center gap-1.5 px-2 py-1 bg-slate-100 rounded-lg text-xs font-medium text-slate-700">
+          <span id="userNameDisplay">Admin</span>
+          <button onclick="logout()" title="Déconnexion" class="text-slate-400 hover:text-rose-600 font-bold ml-1">✕</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= CONTENU PRINCIPAL PAR ONGLET ================= -->
+  <main class="max-w-4xl mx-auto p-3 space-y-4">
+
+    <!-- Onglet 1: TABLEAU DE BORD (Bilan) -->
+    <div id="tab-dashboard" class="space-y-4">
+      <div class="bg-gradient-to-r from-emerald-800 to-emerald-950 text-white p-4 rounded-2xl shadow-sm">
+        <span class="text-[10px] bg-emerald-700/80 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider text-emerald-100">
+          Tableau de bord officiel
+        </span>
+        <h2 class="text-base sm:text-lg font-black mt-1">Cellule Pastef quartiers: S.M.SY 1/ D.S.2.E</h2>
+        <p class="text-xs text-emerald-200">Suivi temps réel synchronisé entre tous les téléphones.</p>
+      </div>
+
+      <!-- 4 Blocs clés -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs">
+          <span class="text-[11px] text-slate-500 font-medium">Stock Restant</span>
+          <div id="dashRemainingStock" class="text-2xl font-black text-emerald-700 mt-0.5">500</div>
+          <span class="text-[10px] text-slate-400">moustiquaires</span>
+        </div>
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs">
+          <span class="text-[11px] text-slate-500 font-medium">Total Distribué</span>
+          <div id="dashTotalDistributed" class="text-2xl font-black text-slate-900 mt-0.5">0</div>
+          <span class="text-[10px] text-slate-400">Matin + Soir</span>
+        </div>
+        <div class="bg-teal-50 p-3 rounded-xl border border-teal-200 shadow-xs">
+          <span class="text-[11px] text-teal-800 font-medium">Matin (Sang)</span>
+          <div id="dashMorningDistributed" class="text-2xl font-black text-teal-800 mt-0.5">0</div>
+          <span class="text-[10px] text-teal-600" id="dashMorningCount">0 personnes (×2)</span>
+        </div>
+        <div class="bg-blue-50 p-3 rounded-xl border border-blue-200 shadow-xs">
+          <span class="text-[11px] text-blue-800 font-medium">Soir (Podium)</span>
+          <div id="dashEveningDistributed" class="text-2xl font-black text-blue-800 mt-0.5">0</div>
+          <span class="text-[10px] text-blue-600" id="dashEveningCount">0 servies</span>
+        </div>
+      </div>
+
+      <!-- Répartition par quartier -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200">
+          <h3 class="text-xs font-bold text-teal-800 mb-2 uppercase">Don de sang — Par quartier</h3>
+          <div id="morningNeighborhoodList" class="space-y-1.5 text-xs text-slate-600">
+            <p class="text-slate-400 italic">Chargement des données...</p>
+          </div>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200">
+          <h3 class="text-xs font-bold text-blue-800 mb-2 uppercase">Podium — Par quartier</h3>
+          <div id="eveningNeighborhoodList" class="space-y-1.5 text-xs text-slate-600">
+            <p class="text-slate-400 italic">Chargement des données...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Onglet 2: MATIN — DON DE SANG -->
+    <div id="tab-morning" class="hidden space-y-4">
+      <div class="bg-teal-700 text-white p-3.5 rounded-2xl flex items-center justify-between">
+        <div>
+          <h2 class="text-base font-bold">Module Matin — Don de Sang</h2>
+          <p class="text-xs text-teal-100">Ration fixe : <strong>2 moustiquaires</strong> par donneur confirmé.</p>
+        </div>
+      </div>
+
+      <!-- Formulaire Saisie Matin -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+        <h3 class="text-xs font-bold uppercase text-slate-700 tracking-wider">Enregistrer un Donneur</h3>
+
+        <form onsubmit="handleMorningSubmit(event)" class="space-y-3 text-xs">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Nom et Prénom *</label>
+            <input type="text" id="mornName" required placeholder="ex: Abdoulaye Fall" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-teal-600 focus:outline-none">
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Téléphone *</label>
+            <input type="tel" id="mornPhone" required placeholder="ex: 77 123 45 67" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-teal-600 focus:outline-none">
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Quartier *</label>
+            <select id="mornQuarter" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-teal-600 focus:outline-none">
+              <option value="S.M.SY 1">S.M.SY 1</option>
+              <option value="D.S.2.E">D.S.2.E</option>
+              <option value="S.M.SY 2">S.M.SY 2</option>
+              <option value="Autre quartier">Autre quartier</option>
+            </select>
+          </div>
+
+          <div class="p-2.5 bg-teal-50 border border-teal-200 rounded-xl flex items-center justify-between font-bold text-teal-900">
+            <span>Ration remise :</span>
+            <span class="bg-white px-2 py-0.5 rounded border border-teal-200">2 Moustiquaires</span>
+          </div>
+
+          <button type="submit" id="mornSubmitBtn" class="w-full py-3 bg-teal-700 hover:bg-teal-800 text-white font-bold rounded-xl text-sm shadow-sm active:scale-98 transition">
+            Valider et Confirmer la Remise (2 moust.)
+          </button>
+        </form>
+      </div>
+
+      <!-- Liste des donneurs -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-bold uppercase text-slate-700">Donneurs Enregistrés (<span id="mornTotalCount">0</span>)</h3>
+          <span class="text-xs font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full"><span id="mornTotalNets">0</span> moust. remises</span>
+        </div>
+        <input type="text" id="mornSearch" oninput="renderMorningList()" placeholder="Rechercher par nom ou numéro..." class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs">
+        <div id="morningItemsContainer" class="space-y-2 max-h-80 overflow-y-auto"></div>
+      </div>
+    </div>
+
+    <!-- Onglet 3: SOIR — PODIUM -->
+    <div id="tab-evening" class="hidden space-y-4">
+      <div class="bg-blue-800 text-white p-3.5 rounded-2xl flex items-center justify-between">
+        <div>
+          <h2 class="text-base font-bold">Module Soir — Distribution Podium</h2>
+          <p class="text-xs text-blue-100">Bénéficiaires recensés par les chefs de quartier.</p>
+        </div>
+        <button onclick="openCensusModal()" class="px-2.5 py-1.5 bg-white text-blue-900 rounded-xl font-bold text-xs shadow-xs">
+          + Saisir listes
+        </button>
+      </div>
+
+      <!-- Compteurs Soir -->
+      <div class="grid grid-cols-3 gap-2 text-center text-xs">
+        <div class="bg-white p-2 rounded-xl border border-slate-200">
+          <span class="text-slate-500">Recensés</span>
+          <div id="eveCensusCount" class="text-base font-black text-slate-900">0</div>
+        </div>
+        <div class="bg-emerald-50 p-2 rounded-xl border border-emerald-200">
+          <span class="text-emerald-700">Servis</span>
+          <div id="eveServedCount" class="text-base font-black text-emerald-700">0</div>
+        </div>
+        <div class="bg-amber-50 p-2 rounded-xl border border-amber-200">
+          <span class="text-amber-700">En attente</span>
+          <div id="evePendingCount" class="text-base font-black text-amber-700">0</div>
+        </div>
+      </div>
+
+      <!-- Recherche Podium -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+        <h3 class="text-xs font-bold uppercase text-slate-700">Recherche Rapide au Podium</h3>
+        <input type="text" id="eveSearch" oninput="renderEveningList()" placeholder="Tapez le nom ou le téléphone..." class="w-full px-3 py-2.5 border-2 border-blue-200 rounded-xl text-sm font-semibold focus:border-blue-600 focus:outline-none">
+        
+        <div class="flex gap-2 text-xs">
+          <button onclick="setEveFilter('ALL')" id="flt-all" class="px-2.5 py-1 rounded-lg bg-blue-700 text-white font-bold">Tous</button>
+          <button onclick="setEveFilter('EN_ATTENTE')" id="flt-wait" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700">En attente</button>
+          <button onclick="setEveFilter('SERVI')" id="flt-serv" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700">Déjà servis</button>
+        </div>
+
+        <div id="eveningItemsContainer" class="space-y-2 max-h-96 overflow-y-auto"></div>
+      </div>
+    </div>
+
+    <!-- Onglet 4: GESTION DU STOCK -->
+    <div id="tab-stock" class="hidden space-y-4">
+      <div class="bg-emerald-800 text-white p-3.5 rounded-2xl flex items-center justify-between">
+        <div>
+          <h2 class="text-base font-bold">Gestion Centrale du Stock</h2>
+          <p class="text-xs text-emerald-100">Stock unique et partagé entre les deux circuits.</p>
+        </div>
+        <button onclick="openStockEntryModal()" class="px-2.5 py-1.5 bg-white text-emerald-900 rounded-xl font-bold text-xs shadow-xs">
+          + Nouvelle livraison
+        </button>
+      </div>
+
+      <!-- Équation Comptable du Stock -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+        <h3 class="text-xs font-bold uppercase text-slate-700">Situation Comptable</h3>
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs">
+          <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+            <span class="text-slate-500">Initial</span>
+            <div id="stkInit" class="text-lg font-black text-slate-900">500</div>
+          </div>
+          <div class="bg-emerald-50 p-2.5 rounded-xl border border-emerald-200">
+            <span class="text-emerald-700">+ Entrées</span>
+            <div id="stkEntries" class="text-lg font-black text-emerald-700">+0</div>
+          </div>
+          <div class="bg-teal-50 p-2.5 rounded-xl border border-teal-200">
+            <span class="text-teal-700">− Matin</span>
+            <div id="stkMornOut" class="text-lg font-black text-teal-800">−0</div>
+          </div>
+          <div class="bg-blue-50 p-2.5 rounded-xl border border-blue-200">
+            <span class="text-blue-700">− Soir</span>
+            <div id="stkEveOut" class="text-lg font-black text-blue-800">−0</div>
+          </div>
+          <div class="col-span-2 sm:col-span-1 bg-emerald-700 text-white p-2.5 rounded-xl">
+            <span class="text-emerald-100 font-bold">= RESTANT</span>
+            <div id="stkRemaining" class="text-xl font-black">...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Historique des livraisons -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-2">
+        <h3 class="text-xs font-bold uppercase text-slate-700">Historique des Livraisons Réceptionnées</h3>
+        <div id="stockEntriesContainer" class="space-y-1.5 text-xs">
+          <p class="text-slate-400 italic">Chargement...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Onglet 5: RAPPORTS & CLÔTURE -->
+    <div id="tab-reports" class="hidden space-y-4">
+      <div class="bg-slate-800 text-white p-3.5 rounded-2xl">
+        <h2 class="text-base font-bold">Rapports Officiels & Clôture</h2>
+        <p class="text-xs text-slate-300">Génération des procès-verbaux de distribution.</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+          <h3 class="font-bold text-sm text-slate-900">Rapport Récapitulatif PDF Officiel</h3>
+          <p class="text-xs text-slate-500">Document officiel complet avec en-tête de la cellule, bilans séparés matin/soir, stock et signatures.</p>
+          <button onclick="downloadOfficialPDF()" class="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs">
+            📄 Télécharger le Rapport PDF
+          </button>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+          <h3 class="font-bold text-sm text-slate-900">Classeur Excel Complet (.xlsx)</h3>
+          <p class="text-xs text-slate-500">Export structuré sur 4 feuilles : Bilan Stock, Liste Don de sang, Liste Podium, et Journal d'Audit.</p>
+          <button onclick="downloadExcelFile()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl text-xs">
+            📊 Télécharger le Fichier Excel
+          </button>
+        </div>
+      </div>
+
+      <!-- Clôture -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+        <div>
+          <span class="text-xs font-semibold text-slate-600">Statut des opérations :</span>
+          <span id="closeStatusLabel" class="ml-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">EN COURS</span>
+        </div>
+        <button id="closeBtn" onclick="toggleClose()" class="px-3 py-1.5 bg-rose-600 text-white rounded-xl text-xs font-bold shadow-xs">
+          Clôturer la Journée
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ================= BARRE DE NAVIGATION INFÉRIEURE MOBILE ================= -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-lg px-2 py-1.5 z-40 flex justify-around text-[10px]">
+    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="flex flex-col items-center py-1 font-bold text-emerald-700">
+      <span class="text-base">📊</span>
+      <span>Bilan</span>
+    </button>
+    <button onclick="switchTab('morning')" id="nav-morning" class="flex flex-col items-center py-1 font-medium text-slate-500">
+      <span class="text-base">🩸</span>
+      <span>Matin</span>
+    </button>
+    <button onclick="switchTab('evening')" id="nav-evening" class="flex flex-col items-center py-1 font-medium text-slate-500">
+      <span class="text-base">🎪</span>
+      <span>Podium</span>
+    </button>
+    <button onclick="switchTab('stock')" id="nav-stock" class="flex flex-col items-center py-1 font-medium text-slate-500">
+      <span class="text-base">📦</span>
+      <span>Stock</span>
+    </button>
+    <button onclick="switchTab('reports')" id="nav-reports" class="flex flex-col items-center py-1 font-medium text-slate-500">
+      <span class="text-base">📑</span>
+      <span>Rapports</span>
+    </button>
+  </nav>
+
+  <!-- ================= LOGIQUE SUPABASE CLOUD ================= -->
+  <script>
+    const CELL_NAME = "Cellule Pastef quartiers: S.M.SY 1/ D.S.2.E";
+    const SUPABASE_URL = "https://vkjgroptpwdhxganhqiz.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_vzUPyqJzuYGCX_kGChptow_i4a8iWKJ";
+
+    // Initialisation du client Supabase
+    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // État local synchronisé
+    let currentUser = null;
+    let stockState = { initial_stock: 500, default_evening_qty: 2, is_closed: false };
+    let stockEntries = [];
+    let morningDonations = [];
+    let eveningBeneficiaries = [];
+    let auditLogs = [];
+
+    // Connexion
+    function selectLogin(user, pin) {
+      document.getElementById('loginUsername').value = user;
+      document.getElementById('loginPin').value = pin;
+      document.getElementById('btn-login-admin').className = user === 'admin' ? 'p-2 rounded-xl border border-emerald-600 bg-emerald-50 text-left text-xs font-bold text-emerald-900' : 'p-2 rounded-xl border border-slate-200 bg-slate-50 text-left text-xs font-medium text-slate-700';
+      document.getElementById('btn-login-agent').className = user === 'agent1' ? 'p-2 rounded-xl border border-emerald-600 bg-emerald-50 text-left text-xs font-bold text-emerald-900' : 'p-2 rounded-xl border border-slate-200 bg-slate-50 text-left text-xs font-medium text-slate-700';
+    }
+
+    async function handleLoginSubmit(e) {
+      e.preventDefault();
+      const u = document.getElementById('loginUsername').value.trim();
+      const p = document.getElementById('loginPin').value.trim();
+      const errDiv = document.getElementById('loginError');
+
+      const { data, error } = await db.from('users').select('*').eq('username', u).eq('pin', p).single();
+      if (error || !data) {
+        errDiv.innerText = "Identifiant ou code PIN invalide";
+        errDiv.classList.remove('hidden');
+        return;
+      }
+
+      currentUser = data;
+      localStorage.setItem('pastef_user', JSON.stringify(data));
+      document.getElementById('loginModal').classList.add('hidden');
+      document.getElementById('userNameDisplay').innerText = data.name;
+      loadAllData();
+    }
+
+    function logout() {
+      localStorage.removeItem('pastef_user');
+      currentUser = null;
+      document.getElementById('loginModal').classList.remove('hidden');
+    }
+
+    // Chargement de toutes les tables Supabase
+    async function loadAllData() {
+      try {
+        const [resStock, resEntries, resMorn, resEve, resLogs] = await Promise.all([
+          db.from('stock_state').select('*').eq('id', 1).single(),
+          db.from('stock_entries').select('*').order('created_at', { ascending: false }),
+          db.from('morning_donations').select('*').order('created_at', { ascending: false }),
+          db.from('evening_beneficiaries').select('*').order('created_at', { ascending: false }),
+          db.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(100)
+        ]);
+
+        if (resStock.data) stockState = resStock.data;
+        if (resEntries.data) stockEntries = resEntries.data;
+        if (resMorn.data) morningDonations = resMorn.data;
+        if (resEve.data) eveningBeneficiaries = resEve.data;
+        if (resLogs.data) auditLogs = resLogs.data;
+
+        renderAll();
+      } catch (err) {
+        console.error("Erreur chargement Supabase:", err);
+      }
+    }
+
+    function calculate() {
+      const initial = stockState.initial_stock || 500;
+      const entries = stockEntries.reduce((s, e) => s + (e.quantity || 0), 0);
+      const morningOut = morningDonations.length * 2;
+      const eveningOut = eveningBeneficiaries
+        .filter(b => b.status === 'SERVI')
+        .reduce((s, b) => s + (b.quantity_given || 2), 0);
+      const totalOut = morningOut + eveningOut;
+      const remaining = initial + entries - totalOut;
+
+      return { initial, entries, morningOut, eveningOut, totalOut, remaining };
+    }
+
+    function switchTab(tabId) {
+      ['dashboard', 'morning', 'evening', 'stock', 'reports'].forEach(id => {
+        document.getElementById(`tab-${id}`).classList.add('hidden');
+        document.getElementById(`nav-${id}`).className = 'flex flex-col items-center py-1 font-medium text-slate-500';
+      });
+      document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+      document.getElementById(`nav-${tabId}`).className = 'flex flex-col items-center py-1 font-bold text-emerald-700';
+    }
+
+    function renderAll() {
+      const calc = calculate();
+      document.getElementById('headerStockVal').innerText = calc.remaining;
+      document.getElementById('dashRemainingStock').innerText = calc.remaining;
+      document.getElementById('dashTotalDistributed').innerText = calc.totalOut;
+      document.getElementById('dashMorningDistributed').innerText = calc.morningOut;
+      document.getElementById('dashMorningCount').innerText = `${morningDonations.length} personnes (×2)`;
+      document.getElementById('dashEveningDistributed').innerText = calc.eveningOut;
+      const eveServed = eveningBeneficiaries.filter(b => b.status === 'SERVI').length;
+      document.getElementById('dashEveningCount').innerText = `${eveServed} servies`;
+
+      document.getElementById('stkInit').innerText = calc.initial;
+      document.getElementById('stkEntries').innerText = `+${calc.entries}`;
+      document.getElementById('stkMornOut').innerText = `−${calc.morningOut}`;
+      document.getElementById('stkEveOut').innerText = `−${calc.eveningOut}`;
+      document.getElementById('stkRemaining').innerText = calc.remaining;
+
+      // Quartiers Matin
+      const mornQ = {};
+      morningDonations.forEach(d => { mornQ[d.neighborhood] = (mornQ[d.neighborhood] || 0) + 1; });
+      const mornQKeys = Object.keys(mornQ);
+      document.getElementById('morningNeighborhoodList').innerHTML = mornQKeys.length ? mornQKeys.map(k => `
+        <div class="flex justify-between py-1 border-b border-slate-100">
+          <span>${k}</span>
+          <span class="font-bold text-teal-800">${mornQ[k]} donneur(s) (${mornQ[k]*2} moust.)</span>
+        </div>
+      `).join('') : '<p class="text-slate-400 italic">Aucun don enregistré.</p>';
+
+      // Quartiers Soir
+      const eveQ = {};
+      eveningBeneficiaries.forEach(b => { eveQ[b.neighborhood] = (eveQ[b.neighborhood] || 0) + 1; });
+      const eveQKeys = Object.keys(eveQ);
+      document.getElementById('eveningNeighborhoodList').innerHTML = eveQKeys.length ? eveQKeys.map(k => `
+        <div class="flex justify-between py-1 border-b border-slate-100">
+          <span>${k}</span>
+          <span class="font-bold text-blue-800">${eveQ[k]} recensé(s)</span>
+        </div>
+      `).join('') : '<p class="text-slate-400 italic">Aucune liste saisie.</p>';
+
+      renderMorningList();
+      renderEveningList();
+
+      // Livraisons
+      document.getElementById('stockEntriesContainer').innerHTML = stockEntries.length ? stockEntries.map(e => `
+        <div class="p-2 bg-slate-50 rounded-lg border border-slate-200 flex justify-between">
+          <span class="font-bold text-emerald-800">+${e.quantity} moustiquaires (${e.reason})</span>
+          <span class="text-slate-400">${new Date(e.created_at).toLocaleDateString()}</span>
+        </div>
+      `).join('') : '<p class="text-slate-400 italic">Aucune livraison enregistrée.</p>';
+
+      // Clôture
+      const closeLabel = document.getElementById('closeStatusLabel');
+      const closeBtn = document.getElementById('closeBtn');
+      if (stockState.is_closed) {
+        closeLabel.innerText = 'CLÔTURÉ';
+        closeLabel.className = 'ml-1 text-xs font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200';
+        closeBtn.innerText = 'Réouvrir la journée';
+        closeBtn.className = 'px-3 py-1.5 bg-amber-600 text-white rounded-xl text-xs font-bold shadow-xs';
+      } else {
+        closeLabel.innerText = 'EN COURS';
+        closeLabel.className = 'ml-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200';
+        closeBtn.innerText = 'Clôturer la Journée';
+        closeBtn.className = 'px-3 py-1.5 bg-rose-600 text-white rounded-xl text-xs font-bold shadow-xs';
+      }
+    }
+
+    // Gestion Matin
+    async function handleMorningSubmit(e) {
+      e.preventDefault();
+      if (stockState.is_closed) { alert('La journée est clôturée ! Enregistrement impossible.'); return; }
+      const calc = calculate();
+      if (calc.remaining < 2) { alert(`Stock insuffisant (${calc.remaining} disponible) !`); return; }
+
+      const name = document.getElementById('mornName').value.trim();
+      const phone = document.getElementById('mornPhone').value.trim();
+      const neighborhood = document.getElementById('mornQuarter').value;
+
+      // Doublon
+      const cleanPhone = phone.replace(/\s+/g, '');
+      const dup = morningDonations.find(d => d.phone.replace(/\s+/g, '') === cleanPhone);
+      if (dup) {
+        if (!confirm(`Doublon détecté : ${dup.full_name} (${dup.phone}) a déjà reçu ses 2 moustiquaires. Confirmer tout de même ?`)) {
+          return;
+        }
+      }
+
+      const btn = document.getElementById('mornSubmitBtn');
+      btn.disabled = true;
+      btn.innerText = "Enregistrement dans le Cloud...";
+
+      const { data, error } = await db.from('morning_donations').insert([{
+        full_name: name,
+        phone: phone,
+        neighborhood: neighborhood,
+        quantity: 2,
+        agent: currentUser?.name || 'Agent Matin'
+      }]).select().single();
+
+      btn.disabled = false;
+      btn.innerText = "Valider et Confirmer la Remise (2 moust.)";
+
+      if (error) {
+        alert("Erreur Supabase: " + error.message);
+        return;
+      }
+
+      await db.from('audit_logs').insert([{
+        user_name: currentUser?.name || 'Agent Matin',
+        action: 'REMISE_MATIN',
+        details: `Don de sang : 2 moustiquaires remises à ${name} (${phone}, ${neighborhood})`
+      }]);
+
+      document.getElementById('mornName').value = '';
+      document.getElementById('mornPhone').value = '';
+      alert(`Remise confirmée : 2 moustiquaires remises à ${name}.`);
+      loadAllData();
+    }
+
+    function renderMorningList() {
+      const q = (document.getElementById('mornSearch')?.value || '').toLowerCase();
+      const items = morningDonations.filter(d => d.full_name.toLowerCase().includes(q) || d.phone.includes(q));
+      document.getElementById('mornTotalCount').innerText = morningDonations.length;
+      document.getElementById('mornTotalNets').innerText = morningDonations.length * 2;
+
+      document.getElementById('morningItemsContainer').innerHTML = items.length ? items.map(d => `
+        <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex justify-between items-center text-xs">
+          <div>
+            <div class="font-bold text-slate-800">${d.full_name} <span class="text-teal-700 bg-teal-100 px-1 rounded text-[10px]">2 moust.</span></div>
+            <div class="text-slate-500 text-[11px]">${d.phone} • ${d.neighborhood}</div>
+          </div>
+          <span class="text-[10px] text-slate-400 font-mono">${new Date(d.created_at).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})}</span>
+        </div>
+      `).join('') : '<p class="text-slate-400 italic py-2 text-center">Aucun enregistrement.</p>';
+    }
+
+    // Gestion Soir
+    let eveFilter = 'ALL';
+    function setEveFilter(f) {
+      eveFilter = f;
+      ['all', 'wait', 'serv'].forEach(id => document.getElementById(`flt-${id}`).className = 'px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700');
+      if (f === 'ALL') document.getElementById('flt-all').className = 'px-2.5 py-1 rounded-lg bg-blue-700 text-white font-bold';
+      if (f === 'EN_ATTENTE') document.getElementById('flt-wait').className = 'px-2.5 py-1 rounded-lg bg-amber-600 text-white font-bold';
+      if (f === 'SERVI') document.getElementById('flt-serv').className = 'px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-bold';
+      renderEveningList();
+    }
+
+    function renderEveningList() {
+      const q = (document.getElementById('eveSearch')?.value || '').toLowerCase();
+      const filtered = eveningBeneficiaries.filter(b => {
+        const match = b.full_name.toLowerCase().includes(q) || b.phone.includes(q);
+        const matchF = eveFilter === 'ALL' || b.status === eveFilter;
+        return match && matchF;
+      });
+
+      const total = eveningBeneficiaries.length;
+      const served = eveningBeneficiaries.filter(b => b.status === 'SERVI').length;
+      document.getElementById('eveCensusCount').innerText = total;
+      document.getElementById('eveServedCount').innerText = served;
+      document.getElementById('evePendingCount').innerText = total - served;
+
+      document.getElementById('eveningItemsContainer').innerHTML = filtered.length ? filtered.map(b => `
+        <div class="p-3 bg-white border border-slate-200 rounded-xl flex justify-between items-center text-xs">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-slate-900">${b.full_name}</span>
+              <span class="text-[10px] font-bold px-1.5 py-0.2 rounded ${b.status === 'SERVI' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                ${b.status === 'SERVI' ? `✓ SERVI (${b.quantity_given} moust.)` : '⏳ EN ATTENTE'}
+              </span>
+            </div>
+            <div class="text-slate-500 text-[11px]">${b.phone} • ${b.neighborhood} (Liste: ${b.origin_chief_or_list})</div>
+          </div>
+          <div>
+            ${b.status !== 'SERVI' ? `
+              <button onclick="servePodium('${b.id}')" class="px-3 py-1.5 bg-blue-700 text-white font-bold rounded-lg hover:bg-blue-800 text-xs shadow-xs">
+                Servir
+              </button>
+            ` : '<span class="text-[10px] text-slate-400 font-bold">Terminé</span>'}
+          </div>
+        </div>
+      `).join('') : '<p class="text-slate-400 italic py-4 text-center">Aucun résultat trouvé.</p>';
+    }
+
+    async function servePodium(id) {
+      if (stockState.is_closed) { alert('Journée clôturée !'); return; }
+      const item = eveningBeneficiaries.find(b => b.id === id);
+      if (!item) return;
+      if (item.status === 'SERVI') { alert(`ATTENTION : ${item.full_name} a DÉJÀ ÉTÉ SERVI(E) !`); return; }
+
+      const qtyStr = prompt(`Quantité de moustiquaires à remettre à ${item.full_name} :`, "2");
+      if (!qtyStr) return;
+      const qty = parseInt(qtyStr, 10);
+      if (isNaN(qty) || qty <= 0) { alert('Quantité invalide.'); return; }
+
+      const calc = calculate();
+      if (qty > calc.remaining) { alert(`Stock insuffisant (${calc.remaining} disponible) !`); return; }
+
+      const { error } = await db.from('evening_beneficiaries').update({
+        status: 'SERVI',
+        quantity_given: qty,
+        served_at: new Date().toISOString(),
+        served_by: currentUser?.name || 'Agent Podium'
+      }).eq('id', id);
+
+      if (error) { alert("Erreur Supabase: " + error.message); return; }
+
+      await db.from('audit_logs').insert([{
+        user_name: currentUser?.name || 'Agent Podium',
+        action: 'REMISE_SOIR',
+        details: `Podium : ${qty} moustiquaires remises à ${item.full_name} (${item.phone})`
+      }]);
+
+      alert(`Distribution validée : ${qty} moustiquaires remises à ${item.full_name}.`);
+      loadAllData();
+    }
+
+    async function openCensusModal() {
+      const input = prompt("Entrez les personnes sous le format : Nom, Téléphone, Quartier, Chef (une par ligne) :\\nExemple : Moussa Sow, 771112233, S.M.SY 1, Chef Sow");
+      if (!input) return;
+
+      const lines = input.split(/\\n|;/).filter(l => l.trim().length > 0);
+      const toInsert = [];
+      lines.forEach(l => {
+        const parts = l.split(',').map(p => p.trim());
+        if (parts[0] && parts[1]) {
+          toInsert.push({
+            full_name: parts[0],
+            phone: parts[1],
+            neighborhood: parts[2] || 'S.M.SY 1',
+            origin_chief_or_list: parts[3] || 'Liste Chef',
+            status: 'EN_ATTENTE',
+            quantity_given: 0,
+            created_by: currentUser?.name || 'Admin'
+          });
+        }
+      });
+
+      if (!toInsert.length) return;
+
+      const { error } = await db.from('evening_beneficiaries').insert(toInsert);
+      if (error) { alert("Erreur: " + error.message); return; }
+
+      await db.from('audit_logs').insert([{
+        user_name: currentUser?.name || 'Admin',
+        action: 'RECENSEMENT_CHEF',
+        details: `${toInsert.length} personnes ajoutées à la liste du soir.`
+      }]);
+
+      alert(`${toInsert.length} personnes ajoutées à la liste.`);
+      loadAllData();
+    }
+
+    async function openStockEntryModal() {
+      const qtyStr = prompt("Quantité de moustiquaires reçues :");
+      if (!qtyStr) return;
+      const qty = parseInt(qtyStr, 10);
+      if (isNaN(qty) || qty <= 0) { alert('Quantité invalide.'); return; }
+
+      const reason = prompt("Motif / Fournisseur / Bon de livraison :", "Livraison complémentaire");
+      if (!reason) return;
+
+      const { error } = await db.from('stock_entries').insert([{
+        quantity: qty,
+        reason: reason,
+        added_by: currentUser?.name || 'Admin'
+      }]);
+
+      if (error) { alert("Erreur: " + error.message); return; }
+
+      await db.from('audit_logs').insert([{
+        user_name: currentUser?.name || 'Admin',
+        action: 'ENTREE_STOCK',
+        details: `Ajout de ${qty} moustiquaires au stock (${reason})`
+      }]);
+
+      alert(`${qty} moustiquaires ajoutées avec succès au stock.`);
+      loadAllData();
+    }
+
+    async function toggleClose() {
+      if (!stockState.is_closed) {
+        if (confirm("Confirmez-vous la clôture définitive des opérations pour aujourd'hui ?")) {
+          await db.from('stock_state').update({
+            is_closed: true,
+            closed_at: new Date().toISOString(),
+            closed_by: currentUser?.name || 'Admin'
+          }).eq('id', 1);
+
+          await db.from('audit_logs').insert([{
+            user_name: currentUser?.name || 'Admin',
+            action: 'CLOTURE_JOURNEE',
+            details: 'Clôture définitive des opérations'
+          }]);
+
+          alert('Journée clôturée avec succès.');
+          loadAllData();
+        }
+      } else {
+        const reason = prompt("Motif obligatoire pour la réouverture exceptionnelle :");
+        if (!reason) return;
+
+        await db.from('stock_state').update({ is_closed: false }).eq('id', 1);
+
+        await db.from('audit_logs').insert([{
+          user_name: currentUser?.name || 'Admin',
+          action: 'REOUVERTURE_EXCEPTIONNELLE',
+          details: `Réouverture : ${reason}`
+        }]);
+
+        alert('Opérations réouvertes.');
+        loadAllData();
+      }
+    }
+
+    // Export PDF Officiel
+    function downloadOfficialPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const calc = calculate();
+
+      doc.setFillColor(11, 102, 35);
+      doc.rect(0, 0, 210, 22, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('RÉPUBLIQUE DU SÉNÉGAL', 105, 9, { align: 'center' });
+      doc.setFontSize(11);
+      doc.text(CELL_NAME.toUpperCase(), 105, 17, { align: 'center' });
+
+      doc.setTextColor(30, 41, 59);
+      doc.setFontSize(15);
+      doc.text('RAPPORT DE DISTRIBUTION DE MOUSTIQUAIRES', 105, 34, { align: 'center' });
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Généré le : ${new Date().toLocaleString('fr-FR')} — Statut : ${stockState.is_closed ? 'CLÔTURÉ' : 'EN COURS'}`, 105, 41, { align: 'center' });
+
+      doc.autoTable({
+        startY: 48,
+        head: [['Indicateur de Stock', 'Quantité']],
+        body: [
+          ['Stock Initial', `${calc.initial} moustiquaires`],
+          ['Nouvelles entrées enregistrées', `+ ${calc.entries} moustiquaires`],
+          ['Total distribué le Matin (Don de sang)', `- ${calc.morningOut} moustiquaires (${morningDonations.length} personnes × 2)`],
+          ['Total distribué le Soir (Podium)', `- ${calc.eveningOut} moustiquaires`],
+          ['TOTAL CUMULÉ DISTRIBUÉ', `${calc.totalOut} moustiquaires`],
+          ['STOCK FINAL RESTANT', `${calc.remaining} moustiquaires`]
+        ],
+        theme: 'grid',
+        headStyles: { fillColor: [11, 102, 35] }
+      });
+
+      let finalY = doc.lastAutoTable.finalY + 20;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Le Coordonnateur de Cellule', 30, finalY);
+      doc.text("L'Administrateur de Plateforme", 130, finalY);
+
+      doc.save(`Rapport_Pastef_${new Date().toISOString().split('T')[0]}.pdf`);
+    }
+
+    // Export Excel
+    function downloadExcelFile() {
+      const calc = calculate();
+      const wb = XLSX.utils.book_new();
+
+      const wsStock = XLSX.utils.json_to_sheet([
+        { Indicateur: 'Cellule', Valeur: CELL_NAME },
+        { Indicateur: 'Date', Valeur: new Date().toLocaleDateString() },
+        { Indicateur: 'Stock Initial', Valeur: calc.initial },
+        { Indicateur: 'Entrées', Valeur: calc.entries },
+        { Indicateur: 'Sorties Matin (Sang)', Valeur: calc.morningOut },
+        { Indicateur: 'Sorties Soir (Podium)', Valeur: calc.eveningOut },
+        { Indicateur: 'Total Distribué', Valeur: calc.totalOut },
+        { Indicateur: 'Stock Restant', Valeur: calc.remaining }
+      ]);
+      XLSX.utils.book_append_sheet(wb, wsStock, 'Stock');
+
+      const wsMorn = XLSX.utils.json_to_sheet(morningDonations);
+      XLSX.utils.book_append_sheet(wb, wsMorn, 'Don_De_Sang_Matin');
+
+      const wsEve = XLSX.utils.json_to_sheet(eveningBeneficiaries);
+      XLSX.utils.book_append_sheet(wb, wsEve, 'Podium_Soir');
+
+      const wsAudit = XLSX.utils.json_to_sheet(auditLogs);
+      XLSX.utils.book_append_sheet(wb, wsAudit, 'Journal_Audit');
+
+      XLSX.writeFile(wb, `Export_Pastef_${new Date().toISOString().split('T')[0]}.xlsx`);
+    }
+
+    // Écoute temps réel des changements Supabase
+    db.channel('realtime_all')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'morning_donations' }, () => loadAllData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'evening_beneficiaries' }, () => loadAllData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'stock_entries' }, () => loadAllData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'stock_state' }, () => loadAllData())
+      .subscribe();
+
+    // Auto-login si session sauvegardée
+    const saved = localStorage.getItem('pastef_user');
+    if (saved) {
+      try {
+        currentUser = JSON.parse(saved);
+        document.getElementById('loginModal').classList.add('hidden');
+        document.getElementById('userNameDisplay').innerText = currentUser.name;
+        loadAllData();
+      } catch (e) {
+        document.getElementById('loginModal').classList.remove('hidden');
+      }
+    } else {
+      document.getElementById('loginModal').classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>

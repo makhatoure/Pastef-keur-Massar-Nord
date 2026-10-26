@@ -4,9 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Cellule Pastef quartiers: S.M.SY 1/ D.S.2.E — Gestion Don de Sang & Podium</title>
-  <!-- Tailwind CSS CDN pour affichage instantané et propre sur smartphone Android -->
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Bibliothèques PDF et Excel embarquées autonomes -->
+  <!-- Supabase JS Client v2 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- jsPDF & XLSX -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -17,9 +19,54 @@
 </head>
 <body class="bg-slate-100 text-slate-900 min-h-screen pb-20">
 
+  <!-- ================= MODALE DE CONNEXION ================= -->
+  <div id="loginModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-slate-200">
+      <div class="bg-emerald-700 text-white p-5 text-center">
+        <div class="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-2 font-black text-2xl">
+          P
+        </div>
+        <h2 class="text-base font-bold tracking-tight">Cellule Pastef quartiers: S.M.SY 1/ D.S.2.E</h2>
+        <p class="text-emerald-100 text-xs mt-1">Plateforme en ligne — Don de Sang & Podium</p>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <div class="space-y-2">
+          <p class="text-xs font-semibold text-slate-600">Sélectionner un profil d'accès :</p>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" onclick="selectLogin('admin', '2026')" id="btn-login-admin" class="p-2 rounded-xl border border-emerald-600 bg-emerald-50 text-left text-xs font-bold text-emerald-900">
+              🛡️ Admin
+              <div class="text-[10px] text-slate-500 font-normal">PIN: 2026</div>
+            </button>
+            <button type="button" onclick="selectLogin('agent1', '1234')" id="btn-login-agent" class="p-2 rounded-xl border border-slate-200 bg-slate-50 text-left text-xs font-medium text-slate-700">
+              👤 Agent
+              <div class="text-[10px] text-slate-500 font-normal">PIN: 1234</div>
+            </button>
+          </div>
+        </div>
+
+        <div id="loginError" class="hidden p-2.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl"></div>
+
+        <form onsubmit="handleLoginSubmit(event)" class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">Identifiant</label>
+            <input type="text" id="loginUsername" value="admin" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-700 mb-1">Code PIN</label>
+            <input type="password" id="loginPin" value="2026" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg font-mono">
+          </div>
+          <button type="submit" id="loginBtn" class="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm rounded-xl shadow-md transition">
+            Accéder à la plateforme
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <!-- ================= EN-TÊTE PRINCIPAL ================= -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
-    <div class="max-w-4xl mx-auto px-3 py-2 flex items-center justify-between">
+    <div class="max-w-4xl mx-auto px-3 py-2.5 flex items-center justify-between">
       <div class="flex items-center gap-2">
         <div class="w-8 h-8 rounded-lg bg-emerald-700 text-white font-black flex items-center justify-center text-sm shadow-xs">
           P
@@ -28,18 +75,21 @@
           <h1 class="text-xs sm:text-sm font-bold text-slate-900 leading-tight">
             Cellule Pastef quartiers: S.M.SY 1/ D.S.2.E
           </h1>
-          <p class="text-[10px] text-emerald-700 font-semibold">Plateforme de Gestion — Don de Sang & Podium</p>
+          <p class="text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            Connecté à Supabase Cloud (Temps Réel)
+          </p>
         </div>
       </div>
 
       <!-- Badges -->
       <div class="flex items-center gap-2">
         <div id="stockBadge" class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
-          Stock : <span id="headerStockVal">500</span>
+          Stock : <span id="headerStockVal">...</span>
         </div>
         <div id="userBadge" class="hidden sm:flex items-center gap-1.5 px-2 py-1 bg-slate-100 rounded-lg text-xs font-medium text-slate-700">
           <span id="userNameDisplay">Admin</span>
-          <button onclick="logout()" class="text-slate-400 hover:text-rose-600 font-bold ml-1">✕</button>
+          <button onclick="logout()" title="Déconnexion" class="text-slate-400 hover:text-rose-600 font-bold ml-1">✕</button>
         </div>
       </div>
     </div>
@@ -55,7 +105,7 @@
           Tableau de bord officiel
         </span>
         <h2 class="text-base sm:text-lg font-black mt-1">Cellule Pastef quartiers: S.M.SY 1/ D.S.2.E</h2>
-        <p class="text-xs text-emerald-200">Suivi temps réel des deux opérations de distribution.</p>
+        <p class="text-xs text-emerald-200">Suivi temps réel synchronisé entre tous les téléphones.</p>
       </div>
 
       <!-- 4 Blocs clés -->
@@ -87,14 +137,14 @@
         <div class="bg-white p-3.5 rounded-xl border border-slate-200">
           <h3 class="text-xs font-bold text-teal-800 mb-2 uppercase">Don de sang — Par quartier</h3>
           <div id="morningNeighborhoodList" class="space-y-1.5 text-xs text-slate-600">
-            <p class="text-slate-400 italic">Aucun don enregistré.</p>
+            <p class="text-slate-400 italic">Chargement des données...</p>
           </div>
         </div>
 
         <div class="bg-white p-3.5 rounded-xl border border-slate-200">
           <h3 class="text-xs font-bold text-blue-800 mb-2 uppercase">Podium — Par quartier</h3>
           <div id="eveningNeighborhoodList" class="space-y-1.5 text-xs text-slate-600">
-            <p class="text-slate-400 italic">Aucune liste saisie.</p>
+            <p class="text-slate-400 italic">Chargement des données...</p>
           </div>
         </div>
       </div>
@@ -139,7 +189,7 @@
             <span class="bg-white px-2 py-0.5 rounded border border-teal-200">2 Moustiquaires</span>
           </div>
 
-          <button type="submit" class="w-full py-3 bg-teal-700 hover:bg-teal-800 text-white font-bold rounded-xl text-sm shadow-sm active:scale-98 transition">
+          <button type="submit" id="mornSubmitBtn" class="w-full py-3 bg-teal-700 hover:bg-teal-800 text-white font-bold rounded-xl text-sm shadow-sm active:scale-98 transition">
             Valider et Confirmer la Remise (2 moust.)
           </button>
         </form>
@@ -233,7 +283,7 @@
           </div>
           <div class="col-span-2 sm:col-span-1 bg-emerald-700 text-white p-2.5 rounded-xl">
             <span class="text-emerald-100 font-bold">= RESTANT</span>
-            <div id="stkRemaining" class="text-xl font-black">500</div>
+            <div id="stkRemaining" class="text-xl font-black">...</div>
           </div>
         </div>
       </div>
@@ -242,7 +292,7 @@
       <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-2">
         <h3 class="text-xs font-bold uppercase text-slate-700">Historique des Livraisons Réceptionnées</h3>
         <div id="stockEntriesContainer" class="space-y-1.5 text-xs">
-          <p class="text-slate-400 italic">Aucune livraison supplémentaire.</p>
+          <p class="text-slate-400 italic">Chargement...</p>
         </div>
       </div>
     </div>
@@ -309,49 +359,87 @@
     </button>
   </nav>
 
-  <!-- ================= LOGIQUE JS AUTONOME ================= -->
+  <!-- ================= LOGIQUE SUPABASE CLOUD ================= -->
   <script>
     const CELL_NAME = "Cellule Pastef quartiers: S.M.SY 1/ D.S.2.E";
+    const SUPABASE_URL = "https://vkjgroptpwdhxganhqiz.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_vzUPyqJzuYGCX_kGChptow_i4a8iWKJ";
 
-    // Modèle de données stocké localement
-    let state = {
-      stockInitial: 500,
-      stockEntries: [],
-      isClosed: false,
-      morningDonations: [],
-      eveningBeneficiaries: [],
-      auditLogs: []
-    };
+    // Initialisation du client Supabase
+    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Chargement persistant
-    function loadState() {
-      const saved = localStorage.getItem('cellule_pastef_db');
-      if (saved) {
-        try { state = JSON.parse(saved); } catch(e){}
-      }
-      renderAll();
+    // État local synchronisé
+    let currentUser = null;
+    let stockState = { initial_stock: 500, default_evening_qty: 2, is_closed: false };
+    let stockEntries = [];
+    let morningDonations = [];
+    let eveningBeneficiaries = [];
+    let auditLogs = [];
+
+    // Connexion
+    function selectLogin(user, pin) {
+      document.getElementById('loginUsername').value = user;
+      document.getElementById('loginPin').value = pin;
+      document.getElementById('btn-login-admin').className = user === 'admin' ? 'p-2 rounded-xl border border-emerald-600 bg-emerald-50 text-left text-xs font-bold text-emerald-900' : 'p-2 rounded-xl border border-slate-200 bg-slate-50 text-left text-xs font-medium text-slate-700';
+      document.getElementById('btn-login-agent').className = user === 'agent1' ? 'p-2 rounded-xl border border-emerald-600 bg-emerald-50 text-left text-xs font-bold text-emerald-900' : 'p-2 rounded-xl border border-slate-200 bg-slate-50 text-left text-xs font-medium text-slate-700';
     }
 
-    function saveState(action, details) {
-      if (action) {
-        state.auditLogs.unshift({
-          timestamp: new Date().toISOString(),
-          user: 'Admin',
-          action: action,
-          details: details
-        });
+    async function handleLoginSubmit(e) {
+      e.preventDefault();
+      const u = document.getElementById('loginUsername').value.trim();
+      const p = document.getElementById('loginPin').value.trim();
+      const errDiv = document.getElementById('loginError');
+
+      const { data, error } = await db.from('users').select('*').eq('username', u).eq('pin', p).single();
+      if (error || !data) {
+        errDiv.innerText = "Identifiant ou code PIN invalide";
+        errDiv.classList.remove('hidden');
+        return;
       }
-      localStorage.setItem('cellule_pastef_db', JSON.stringify(state));
-      renderAll();
+
+      currentUser = data;
+      localStorage.setItem('pastef_user', JSON.stringify(data));
+      document.getElementById('loginModal').classList.add('hidden');
+      document.getElementById('userNameDisplay').innerText = data.name;
+      loadAllData();
+    }
+
+    function logout() {
+      localStorage.removeItem('pastef_user');
+      currentUser = null;
+      document.getElementById('loginModal').classList.remove('hidden');
+    }
+
+    // Chargement de toutes les tables Supabase
+    async function loadAllData() {
+      try {
+        const [resStock, resEntries, resMorn, resEve, resLogs] = await Promise.all([
+          db.from('stock_state').select('*').eq('id', 1).single(),
+          db.from('stock_entries').select('*').order('created_at', { ascending: false }),
+          db.from('morning_donations').select('*').order('created_at', { ascending: false }),
+          db.from('evening_beneficiaries').select('*').order('created_at', { ascending: false }),
+          db.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(100)
+        ]);
+
+        if (resStock.data) stockState = resStock.data;
+        if (resEntries.data) stockEntries = resEntries.data;
+        if (resMorn.data) morningDonations = resMorn.data;
+        if (resEve.data) eveningBeneficiaries = resEve.data;
+        if (resLogs.data) auditLogs = resLogs.data;
+
+        renderAll();
+      } catch (err) {
+        console.error("Erreur chargement Supabase:", err);
+      }
     }
 
     function calculate() {
-      const initial = state.stockInitial || 500;
-      const entries = state.stockEntries.reduce((s, e) => s + e.qty, 0);
-      const morningOut = state.morningDonations.length * 2;
-      const eveningOut = state.eveningBeneficiaries
+      const initial = stockState.initial_stock || 500;
+      const entries = stockEntries.reduce((s, e) => s + (e.quantity || 0), 0);
+      const morningOut = morningDonations.length * 2;
+      const eveningOut = eveningBeneficiaries
         .filter(b => b.status === 'SERVI')
-        .reduce((s, b) => s + (b.qty || 2), 0);
+        .reduce((s, b) => s + (b.quantity_given || 2), 0);
       const totalOut = morningOut + eveningOut;
       const remaining = initial + entries - totalOut;
 
@@ -373,9 +461,9 @@
       document.getElementById('dashRemainingStock').innerText = calc.remaining;
       document.getElementById('dashTotalDistributed').innerText = calc.totalOut;
       document.getElementById('dashMorningDistributed').innerText = calc.morningOut;
-      document.getElementById('dashMorningCount').innerText = `${state.morningDonations.length} personnes (×2)`;
+      document.getElementById('dashMorningCount').innerText = `${morningDonations.length} personnes (×2)`;
       document.getElementById('dashEveningDistributed').innerText = calc.eveningOut;
-      const eveServed = state.eveningBeneficiaries.filter(b => b.status === 'SERVI').length;
+      const eveServed = eveningBeneficiaries.filter(b => b.status === 'SERVI').length;
       document.getElementById('dashEveningCount').innerText = `${eveServed} servies`;
 
       document.getElementById('stkInit').innerText = calc.initial;
@@ -386,7 +474,7 @@
 
       // Quartiers Matin
       const mornQ = {};
-      state.morningDonations.forEach(d => { mornQ[d.neighborhood] = (mornQ[d.neighborhood] || 0) + 1; });
+      morningDonations.forEach(d => { mornQ[d.neighborhood] = (mornQ[d.neighborhood] || 0) + 1; });
       const mornQKeys = Object.keys(mornQ);
       document.getElementById('morningNeighborhoodList').innerHTML = mornQKeys.length ? mornQKeys.map(k => `
         <div class="flex justify-between py-1 border-b border-slate-100">
@@ -397,7 +485,7 @@
 
       // Quartiers Soir
       const eveQ = {};
-      state.eveningBeneficiaries.forEach(b => { eveQ[b.neighborhood] = (eveQ[b.neighborhood] || 0) + 1; });
+      eveningBeneficiaries.forEach(b => { eveQ[b.neighborhood] = (eveQ[b.neighborhood] || 0) + 1; });
       const eveQKeys = Object.keys(eveQ);
       document.getElementById('eveningNeighborhoodList').innerHTML = eveQKeys.length ? eveQKeys.map(k => `
         <div class="flex justify-between py-1 border-b border-slate-100">
@@ -410,17 +498,17 @@
       renderEveningList();
 
       // Livraisons
-      document.getElementById('stockEntriesContainer').innerHTML = state.stockEntries.length ? state.stockEntries.map(e => `
+      document.getElementById('stockEntriesContainer').innerHTML = stockEntries.length ? stockEntries.map(e => `
         <div class="p-2 bg-slate-50 rounded-lg border border-slate-200 flex justify-between">
-          <span class="font-bold text-emerald-800">+${e.qty} moustiquaires (${e.reason})</span>
-          <span class="text-slate-400">${new Date(e.date).toLocaleDateString()}</span>
+          <span class="font-bold text-emerald-800">+${e.quantity} moustiquaires (${e.reason})</span>
+          <span class="text-slate-400">${new Date(e.created_at).toLocaleDateString()}</span>
         </div>
       `).join('') : '<p class="text-slate-400 italic">Aucune livraison enregistrée.</p>';
 
       // Clôture
       const closeLabel = document.getElementById('closeStatusLabel');
       const closeBtn = document.getElementById('closeBtn');
-      if (state.isClosed) {
+      if (stockState.is_closed) {
         closeLabel.innerText = 'CLÔTURÉ';
         closeLabel.className = 'ml-1 text-xs font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200';
         closeBtn.innerText = 'Réouvrir la journée';
@@ -434,52 +522,70 @@
     }
 
     // Gestion Matin
-    function handleMorningSubmit(e) {
+    async function handleMorningSubmit(e) {
       e.preventDefault();
-      if (state.isClosed) { alert('Journée clôturée !'); return; }
+      if (stockState.is_closed) { alert('La journée est clôturée ! Enregistrement impossible.'); return; }
       const calc = calculate();
-      if (calc.remaining < 2) { alert('Stock insuffisant !'); return; }
+      if (calc.remaining < 2) { alert(`Stock insuffisant (${calc.remaining} disponible) !`); return; }
 
       const name = document.getElementById('mornName').value.trim();
       const phone = document.getElementById('mornPhone').value.trim();
       const neighborhood = document.getElementById('mornQuarter').value;
 
-      // Doublon ?
-      const dup = state.morningDonations.find(d => d.phone.replace(/\\s/g,'') === phone.replace(/\\s/g,''));
+      // Doublon
+      const cleanPhone = phone.replace(/\s+/g, '');
+      const dup = morningDonations.find(d => d.phone.replace(/\s+/g, '') === cleanPhone);
       if (dup) {
-        if (!confirm(`Doublon détecté : ${dup.fullName} (${dup.phone}) a déjà été enregistré. Forcer l'enregistrement ?`)) {
+        if (!confirm(`Doublon détecté : ${dup.full_name} (${dup.phone}) a déjà reçu ses 2 moustiquaires. Confirmer tout de même ?`)) {
           return;
         }
       }
 
-      state.morningDonations.unshift({
-        id: 'm-' + Date.now(),
-        fullName: name,
+      const btn = document.getElementById('mornSubmitBtn');
+      btn.disabled = true;
+      btn.innerText = "Enregistrement dans le Cloud...";
+
+      const { data, error } = await db.from('morning_donations').insert([{
+        full_name: name,
         phone: phone,
         neighborhood: neighborhood,
-        qty: 2,
-        date: new Date().toISOString()
-      });
+        quantity: 2,
+        agent: currentUser?.name || 'Agent Matin'
+      }]).select().single();
+
+      btn.disabled = false;
+      btn.innerText = "Valider et Confirmer la Remise (2 moust.)";
+
+      if (error) {
+        alert("Erreur Supabase: " + error.message);
+        return;
+      }
+
+      await db.from('audit_logs').insert([{
+        user_name: currentUser?.name || 'Agent Matin',
+        action: 'REMISE_MATIN',
+        details: `Don de sang : 2 moustiquaires remises à ${name} (${phone}, ${neighborhood})`
+      }]);
 
       document.getElementById('mornName').value = '';
       document.getElementById('mornPhone').value = '';
-      saveState('REMISE_MATIN', `Don de sang : 2 moustiquaires remises à ${name} (${phone}, ${neighborhood})`);
       alert(`Remise confirmée : 2 moustiquaires remises à ${name}.`);
+      loadAllData();
     }
 
     function renderMorningList() {
       const q = (document.getElementById('mornSearch')?.value || '').toLowerCase();
-      const items = state.morningDonations.filter(d => d.fullName.toLowerCase().includes(q) || d.phone.includes(q));
-      document.getElementById('mornTotalCount').innerText = state.morningDonations.length;
-      document.getElementById('mornTotalNets').innerText = state.morningDonations.length * 2;
+      const items = morningDonations.filter(d => d.full_name.toLowerCase().includes(q) || d.phone.includes(q));
+      document.getElementById('mornTotalCount').innerText = morningDonations.length;
+      document.getElementById('mornTotalNets').innerText = morningDonations.length * 2;
 
       document.getElementById('morningItemsContainer').innerHTML = items.length ? items.map(d => `
         <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex justify-between items-center text-xs">
           <div>
-            <div class="font-bold text-slate-800">${d.fullName} <span class="text-teal-700 bg-teal-100 px-1 rounded text-[10px]">2 moust.</span></div>
+            <div class="font-bold text-slate-800">${d.full_name} <span class="text-teal-700 bg-teal-100 px-1 rounded text-[10px]">2 moust.</span></div>
             <div class="text-slate-500 text-[11px]">${d.phone} • ${d.neighborhood}</div>
           </div>
-          <span class="text-[10px] text-slate-400 font-mono">${new Date(d.date).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})}</span>
+          <span class="text-[10px] text-slate-400 font-mono">${new Date(d.created_at).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})}</span>
         </div>
       `).join('') : '<p class="text-slate-400 italic py-2 text-center">Aucun enregistrement.</p>';
     }
@@ -497,14 +603,14 @@
 
     function renderEveningList() {
       const q = (document.getElementById('eveSearch')?.value || '').toLowerCase();
-      const filtered = state.eveningBeneficiaries.filter(b => {
-        const match = b.fullName.toLowerCase().includes(q) || b.phone.includes(q);
+      const filtered = eveningBeneficiaries.filter(b => {
+        const match = b.full_name.toLowerCase().includes(q) || b.phone.includes(q);
         const matchF = eveFilter === 'ALL' || b.status === eveFilter;
         return match && matchF;
       });
 
-      const total = state.eveningBeneficiaries.length;
-      const served = state.eveningBeneficiaries.filter(b => b.status === 'SERVI').length;
+      const total = eveningBeneficiaries.length;
+      const served = eveningBeneficiaries.filter(b => b.status === 'SERVI').length;
       document.getElementById('eveCensusCount').innerText = total;
       document.getElementById('eveServedCount').innerText = served;
       document.getElementById('evePendingCount').innerText = total - served;
@@ -513,12 +619,12 @@
         <div class="p-3 bg-white border border-slate-200 rounded-xl flex justify-between items-center text-xs">
           <div>
             <div class="flex items-center gap-2">
-              <span class="font-bold text-slate-900">${b.fullName}</span>
+              <span class="font-bold text-slate-900">${b.full_name}</span>
               <span class="text-[10px] font-bold px-1.5 py-0.2 rounded ${b.status === 'SERVI' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
-                ${b.status === 'SERVI' ? `✓ SERVI (${b.qty} moust.)` : '⏳ EN ATTENTE'}
+                ${b.status === 'SERVI' ? `✓ SERVI (${b.quantity_given} moust.)` : '⏳ EN ATTENTE'}
               </span>
             </div>
-            <div class="text-slate-500 text-[11px]">${b.phone} • ${b.neighborhood} (Liste: ${b.chief})</div>
+            <div class="text-slate-500 text-[11px]">${b.phone} • ${b.neighborhood} (Liste: ${b.origin_chief_or_list})</div>
           </div>
           <div>
             ${b.status !== 'SERVI' ? `
@@ -531,13 +637,13 @@
       `).join('') : '<p class="text-slate-400 italic py-4 text-center">Aucun résultat trouvé.</p>';
     }
 
-    function servePodium(id) {
-      if (state.isClosed) { alert('Journée clôturée !'); return; }
-      const item = state.eveningBeneficiaries.find(b => b.id === id);
+    async function servePodium(id) {
+      if (stockState.is_closed) { alert('Journée clôturée !'); return; }
+      const item = eveningBeneficiaries.find(b => b.id === id);
       if (!item) return;
-      if (item.status === 'SERVI') { alert('ATTENTION : Ce bénéficiaire a déjà été servi !'); return; }
+      if (item.status === 'SERVI') { alert(`ATTENTION : ${item.full_name} a DÉJÀ ÉTÉ SERVI(E) !`); return; }
 
-      const qtyStr = prompt(`Quantité de moustiquaires à remettre à ${item.fullName} :`, "2");
+      const qtyStr = prompt(`Quantité de moustiquaires à remettre à ${item.full_name} :`, "2");
       if (!qtyStr) return;
       const qty = parseInt(qtyStr, 10);
       if (isNaN(qty) || qty <= 0) { alert('Quantité invalide.'); return; }
@@ -545,41 +651,62 @@
       const calc = calculate();
       if (qty > calc.remaining) { alert(`Stock insuffisant (${calc.remaining} disponible) !`); return; }
 
-      item.status = 'SERVI';
-      item.qty = qty;
-      item.servedAt = new Date().toISOString();
+      const { error } = await db.from('evening_beneficiaries').update({
+        status: 'SERVI',
+        quantity_given: qty,
+        served_at: new Date().toISOString(),
+        served_by: currentUser?.name || 'Agent Podium'
+      }).eq('id', id);
 
-      saveState('REMISE_SOIR', `Podium : ${qty} moustiquaires remises à ${item.fullName} (${item.phone})`);
-      alert(`Distribution validée : ${qty} moustiquaires remises à ${item.fullName}.`);
+      if (error) { alert("Erreur Supabase: " + error.message); return; }
+
+      await db.from('audit_logs').insert([{
+        user_name: currentUser?.name || 'Agent Podium',
+        action: 'REMISE_SOIR',
+        details: `Podium : ${qty} moustiquaires remises à ${item.full_name} (${item.phone})`
+      }]);
+
+      alert(`Distribution validée : ${qty} moustiquaires remises à ${item.full_name}.`);
+      loadAllData();
     }
 
-    function openCensusModal() {
-      const input = prompt("Entrez les personnes sous le format : Nom, Téléphone, Quartier, Chef (une par ligne ou séparées par des points-virgules) :\\nExemple : Moussa Sow, 771112233, S.M.SY 1, Chef Sow");
+    async function openCensusModal() {
+      const input = prompt("Entrez les personnes sous le format : Nom, Téléphone, Quartier, Chef (une par ligne) :\\nExemple : Moussa Sow, 771112233, S.M.SY 1, Chef Sow");
       if (!input) return;
 
       const lines = input.split(/\\n|;/).filter(l => l.trim().length > 0);
-      let count = 0;
+      const toInsert = [];
       lines.forEach(l => {
         const parts = l.split(',').map(p => p.trim());
         if (parts[0] && parts[1]) {
-          state.eveningBeneficiaries.unshift({
-            id: 'e-' + Date.now() + Math.random().toString(36).substring(2,5),
-            fullName: parts[0],
+          toInsert.push({
+            full_name: parts[0],
             phone: parts[1],
             neighborhood: parts[2] || 'S.M.SY 1',
-            chief: parts[3] || 'Liste Chef',
+            origin_chief_or_list: parts[3] || 'Liste Chef',
             status: 'EN_ATTENTE',
-            qty: 0
+            quantity_given: 0,
+            created_by: currentUser?.name || 'Admin'
           });
-          count++;
         }
       });
 
-      saveState('RECENSEMENT_CHEF', `${count} bénéficiaires recensés ajoutés à la liste.`);
-      alert(`${count} personne(s) ajoutée(s) à la liste du soir.`);
+      if (!toInsert.length) return;
+
+      const { error } = await db.from('evening_beneficiaries').insert(toInsert);
+      if (error) { alert("Erreur: " + error.message); return; }
+
+      await db.from('audit_logs').insert([{
+        user_name: currentUser?.name || 'Admin',
+        action: 'RECENSEMENT_CHEF',
+        details: `${toInsert.length} personnes ajoutées à la liste du soir.`
+      }]);
+
+      alert(`${toInsert.length} personnes ajoutées à la liste.`);
+      loadAllData();
     }
 
-    function openStockEntryModal() {
+    async function openStockEntryModal() {
       const qtyStr = prompt("Quantité de moustiquaires reçues :");
       if (!qtyStr) return;
       const qty = parseInt(qtyStr, 10);
@@ -588,30 +715,56 @@
       const reason = prompt("Motif / Fournisseur / Bon de livraison :", "Livraison complémentaire");
       if (!reason) return;
 
-      state.stockEntries.push({
-        id: 'stk-' + Date.now(),
-        qty: qty,
+      const { error } = await db.from('stock_entries').insert([{
+        quantity: qty,
         reason: reason,
-        date: new Date().toISOString()
-      });
+        added_by: currentUser?.name || 'Admin'
+      }]);
 
-      saveState('ENTREE_STOCK', `Ajout de ${qty} moustiquaires au stock (${reason})`);
+      if (error) { alert("Erreur: " + error.message); return; }
+
+      await db.from('audit_logs').insert([{
+        user_name: currentUser?.name || 'Admin',
+        action: 'ENTREE_STOCK',
+        details: `Ajout de ${qty} moustiquaires au stock (${reason})`
+      }]);
+
       alert(`${qty} moustiquaires ajoutées avec succès au stock.`);
+      loadAllData();
     }
 
-    function toggleClose() {
-      if (!state.isClosed) {
+    async function toggleClose() {
+      if (!stockState.is_closed) {
         if (confirm("Confirmez-vous la clôture définitive des opérations pour aujourd'hui ?")) {
-          state.isClosed = true;
-          saveState('CLOTURE_JOURNEE', 'Clôture définitive des opérations');
+          await db.from('stock_state').update({
+            is_closed: true,
+            closed_at: new Date().toISOString(),
+            closed_by: currentUser?.name || 'Admin'
+          }).eq('id', 1);
+
+          await db.from('audit_logs').insert([{
+            user_name: currentUser?.name || 'Admin',
+            action: 'CLOTURE_JOURNEE',
+            details: 'Clôture définitive des opérations'
+          }]);
+
           alert('Journée clôturée avec succès.');
+          loadAllData();
         }
       } else {
         const reason = prompt("Motif obligatoire pour la réouverture exceptionnelle :");
         if (!reason) return;
-        state.isClosed = false;
-        saveState('REOUVERTURE_EXCEPTIONNELLE', `Réouverture : ${reason}`);
+
+        await db.from('stock_state').update({ is_closed: false }).eq('id', 1);
+
+        await db.from('audit_logs').insert([{
+          user_name: currentUser?.name || 'Admin',
+          action: 'REOUVERTURE_EXCEPTIONNELLE',
+          details: `Réouverture : ${reason}`
+        }]);
+
         alert('Opérations réouvertes.');
+        loadAllData();
       }
     }
 
@@ -635,16 +788,15 @@
       doc.text('RAPPORT DE DISTRIBUTION DE MOUSTIQUAIRES', 105, 34, { align: 'center' });
       doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
-      doc.text(`Généré le : ${new Date().toLocaleString('fr-FR')} — Statut : ${state.isClosed ? 'CLÔTURÉ' : 'EN COURS'}`, 105, 41, { align: 'center' });
+      doc.text(`Généré le : ${new Date().toLocaleString('fr-FR')} — Statut : ${stockState.is_closed ? 'CLÔTURÉ' : 'EN COURS'}`, 105, 41, { align: 'center' });
 
-      // Tableau Stock
       doc.autoTable({
         startY: 48,
         head: [['Indicateur de Stock', 'Quantité']],
         body: [
           ['Stock Initial', `${calc.initial} moustiquaires`],
           ['Nouvelles entrées enregistrées', `+ ${calc.entries} moustiquaires`],
-          ['Total distribué le Matin (Don de sang)', `- ${calc.morningOut} moustiquaires (${state.morningDonations.length} personnes × 2)`],
+          ['Total distribué le Matin (Don de sang)', `- ${calc.morningOut} moustiquaires (${morningDonations.length} personnes × 2)`],
           ['Total distribué le Soir (Podium)', `- ${calc.eveningOut} moustiquaires`],
           ['TOTAL CUMULÉ DISTRIBUÉ', `${calc.totalOut} moustiquaires`],
           ['STOCK FINAL RESTANT', `${calc.remaining} moustiquaires`]
@@ -653,7 +805,6 @@
         headStyles: { fillColor: [11, 102, 35] }
       });
 
-      // Signatures
       let finalY = doc.lastAutoTable.finalY + 20;
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
@@ -680,19 +831,40 @@
       ]);
       XLSX.utils.book_append_sheet(wb, wsStock, 'Stock');
 
-      const wsMorn = XLSX.utils.json_to_sheet(state.morningDonations);
+      const wsMorn = XLSX.utils.json_to_sheet(morningDonations);
       XLSX.utils.book_append_sheet(wb, wsMorn, 'Don_De_Sang_Matin');
 
-      const wsEve = XLSX.utils.json_to_sheet(state.eveningBeneficiaries);
+      const wsEve = XLSX.utils.json_to_sheet(eveningBeneficiaries);
       XLSX.utils.book_append_sheet(wb, wsEve, 'Podium_Soir');
 
-      const wsAudit = XLSX.utils.json_to_sheet(state.auditLogs);
+      const wsAudit = XLSX.utils.json_to_sheet(auditLogs);
       XLSX.utils.book_append_sheet(wb, wsAudit, 'Journal_Audit');
 
       XLSX.writeFile(wb, `Export_Pastef_${new Date().toISOString().split('T')[0]}.xlsx`);
     }
 
-    loadState();
+    // Écoute temps réel des changements Supabase
+    db.channel('realtime_all')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'morning_donations' }, () => loadAllData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'evening_beneficiaries' }, () => loadAllData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'stock_entries' }, () => loadAllData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'stock_state' }, () => loadAllData())
+      .subscribe();
+
+    // Auto-login si session sauvegardée
+    const saved = localStorage.getItem('pastef_user');
+    if (saved) {
+      try {
+        currentUser = JSON.parse(saved);
+        document.getElementById('loginModal').classList.add('hidden');
+        document.getElementById('userNameDisplay').innerText = currentUser.name;
+        loadAllData();
+      } catch (e) {
+        document.getElementById('loginModal').classList.remove('hidden');
+      }
+    } else {
+      document.getElementById('loginModal').classList.remove('hidden');
+    }
   </script>
 </body>
 </html>
