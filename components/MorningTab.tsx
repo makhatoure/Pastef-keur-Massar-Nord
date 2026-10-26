@@ -1,0 +1,534 @@
+'use client';
+
+import React, { useState } from 'react';
+import { MorningDonation, User } from '@/lib/types';
+import { HeartHandshake, UserPlus, Search, CheckCircle2, AlertTriangle, Clock, MapPin, Phone, User as UserIcon, Edit3, ShieldAlert } from 'lucide-react';
+
+interface MorningTabProps {
+  donations: MorningDonation[];
+  currentUser: User | null;
+  remainingStock: number;
+  isClosed: boolean;
+  onRefresh: () => void;
+}
+
+const PRESET_NEIGHBORHOODS = ['S.M.SY 1', 'D.S.2.E', 'S.M.SY 2', 'Autre quartier'];
+
+export default function MorningTab({
+  donations,
+  currentUser,
+  remainingStock,
+  isClosed,
+  onRefresh,
+}: MorningTabProps) {
+  // Formulaire de saisie
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [neighborhood, setNeighborhood] = useState('S.M.SY 1');
+  const [customNeighborhood, setCustomNeighborhood] = useState('');
+  
+  // États de l'interface
+  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterNeighborhood, setFilterNeighborhood] = useState('ALL');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Modale de confirmation de remise (Étape obligatoire)
+  const [confirmModalData, setConfirmModalData] = useState<{
+    fullName: string;
+    phone: string;
+    neighborhood: string;
+    forceDuplicate?: boolean;
+  } | null>(null);
+
+  // Modale d'édition administrative
+  const [editingItem, setEditingItem] = useState<MorningDonation | null>(null);
+  const [editReason, setEditReason] = useState('');
+
+  const targetNeighborhood = neighborhood === 'Autre quartier' ? customNeighborhood.trim() : neighborhood;
+
+  // Pré-validation du formulaire avant ouverture de la modale de confirmation
+  const handlePreSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    if (isClosed) {
+      setErrorMsg('La journée est clôturée. Enregistrement impossible.');
+      return;
+    }
+
+    if (!fullName.trim() || !phone.trim() || !targetNeighborhood) {
+      setErrorMsg('Tous les champs (Nom, Téléphone, Quartier) sont strictement obligatoires.');
+      return;
+    }
+
+    if (remainingStock < 2) {
+      setErrorMsg(`Stock insuffisant (${remainingStock} disponible). Impossible de remettre 2 moustiquaires.`);
+      return;
+    }
+
+    // Ouvrir la modale de confirmation
+    setConfirmModalData({
+      fullName: fullName.trim(),
+      phone: phone.trim(),
+      neighborhood: targetNeighborhood,
+    });
+  };
+
+  // Validation effective côté serveur
+  const executeDonation = async (forceDuplicate = false) => {
+    if (!confirmModalData) return;
+    setLoading(true);
+    setErrorMsg(null);
+
+    try {
+      const res = await fetch('/api/morning', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: confirmModalData.fullName,
+          phone: confirmModalData.phone,
+          neighborhood: confirmModalData.neighborhood,
+          agentName: currentUser?.name || 'Agent Matin',
+          forceDuplicate,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.isDuplicateWarning && !forceDuplicate) {
+        // Alerte doublon : demander confirmation forcée si autorisé
+        setErrorMsg(data.message);
+        setConfirmModalData(prev => (prev ? { ...prev, forceDuplicate: true } : null));
+        setLoading(false);
+        return;
+      }
+
+      if (!data.success) {
+        setErrorMsg(data.message || 'Erreur lors de l\'enregistrement.');
+        setConfirmModalData(null);
+      } else {
+        setSuccessMsg(data.message);
+        setFullName('');
+        setPhone('');
+        setCustomNeighborhood('');
+        setConfirmModalData(null);
+        onRefresh();
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Erreur réseau');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Modification réservée à l'administrateur
+  const handleAdminUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingItem || !editReason.trim()) {
+      setErrorMsg('Le motif de modification est obligatoire.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/morning', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingItem.id,
+          fullName: editingItem.fullName,
+          phone: editingItem.phone,
+          neighborhood: editingItem.neighborhood,
+          reason: editReason.trim(),
+          adminName: currentUser?.name || 'Administrateur',
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSuccessMsg('Fiche modifiée avec succès dans le journal d\'audit.');
+        setEditingItem(null);
+        setEditReason('');
+        onRefresh();
+      } else {
+        setErrorMsg(data.message || 'Erreur modification');
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Erreur serveur');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filtrage et recherche rapide
+  const filteredDonations = donations.filter(item => {
+    const matchesSearch =
+      item.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.phone.includes(searchTerm);
+    const matchesNeighborhood =
+      filterNeighborhood === 'ALL' || item.neighborhood === filterNeighborhood;
+    return matchesSearch && matchesNeighborhood;
+  });
+
+  return (
+    <div className="space-y-4 pb-16">
+      {/* En-tête du module */}
+      <div className="bg-teal-700 text-white p-4 rounded-2xl shadow-sm">
+        <div className="flex items-center gap-2">
+          <HeartHandshake className="w-6 h-6 flex-shrink-0" />
+          <div>
+            <h2 className="text-base sm:text-lg font-bold">Module du Matin — Don de Sang</h2>
+            <p className="text-xs text-teal-100">
+              Ration fixe : <strong>2 moustiquaires</strong> par donneur après confirmation.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Messages d'alerte / succès */}
+      {errorMsg && (
+        <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs flex items-center justify-between gap-2 shadow-xs">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0 text-rose-600" />
+            <span>{errorMsg}</span>
+          </div>
+          <button onClick={() => setErrorMsg(null)} className="text-slate-400 hover:text-slate-700 font-bold">✕</button>
+        </div>
+      )}
+
+      {successMsg && (
+        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs flex items-center justify-between gap-2 shadow-xs">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-600" />
+            <span>{successMsg}</span>
+          </div>
+          <button onClick={() => setSuccessMsg(null)} className="text-slate-400 hover:text-slate-700 font-bold">✕</button>
+        </div>
+      )}
+
+      {/* Formulaire de saisie rapide adapté téléphone */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+        <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+          <UserPlus className="w-4 h-4 text-teal-700" />
+          Enregistrer un Donneur & Remise de 2 Moustiquaires
+        </h3>
+
+        <form onSubmit={handlePreSubmit} className="space-y-3">
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Nom et Prénom du Donneur <span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              disabled={isClosed}
+              value={fullName}
+              onChange={e => setFullName(e.target.value)}
+              placeholder="ex: Amadou Diallo"
+              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-600 focus:outline-none disabled:bg-slate-100"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Numéro de Téléphone <span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="tel"
+              required
+              disabled={isClosed}
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+              placeholder="ex: 77 123 45 67"
+              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-600 focus:outline-none disabled:bg-slate-100"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Quartier de résidence <span className="text-rose-500">*</span>
+            </label>
+            <div className="grid grid-cols-2 gap-1.5 mb-2">
+              {PRESET_NEIGHBORHOODS.map(q => (
+                <button
+                  type="button"
+                  key={q}
+                  disabled={isClosed}
+                  onClick={() => setNeighborhood(q)}
+                  className={`py-1.5 px-2 rounded-lg text-xs font-medium border text-center transition ${
+                    neighborhood === q
+                      ? 'border-teal-700 bg-teal-50 text-teal-900 font-bold'
+                      : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+
+            {neighborhood === 'Autre quartier' && (
+              <input
+                type="text"
+                required
+                disabled={isClosed}
+                value={customNeighborhood}
+                onChange={e => setCustomNeighborhood(e.target.value)}
+                placeholder="Préciser le quartier..."
+                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-600 focus:outline-none"
+              />
+            )}
+          </div>
+
+          <div className="p-2.5 bg-teal-50 rounded-xl border border-teal-200 flex items-center justify-between text-xs">
+            <span className="font-semibold text-teal-900">Quantité à remettre :</span>
+            <span className="font-black text-teal-800 bg-white px-2 py-0.5 rounded-md border border-teal-200">
+              2 Moustiquaires
+            </span>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isClosed || remainingStock < 2}
+            className="w-full py-3 px-4 bg-teal-700 hover:bg-teal-800 active:scale-[0.99] text-white font-bold rounded-xl shadow-md transition disabled:opacity-50 text-sm flex items-center justify-center gap-2"
+          >
+            <CheckCircle2 className="w-5 h-5" />
+            <span>Valider la Remise (2 moustiquaires)</span>
+          </button>
+        </form>
+      </div>
+
+      {/* Liste des donneurs enregistrés et recherche */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3">
+          <div className="flex items-center gap-2">
+            <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+              Donneurs Enregistrés ({filteredDonations.length} / {donations.length})
+            </h3>
+            <span className="text-[11px] bg-teal-100 text-teal-800 font-bold px-2 py-0.5 rounded-full">
+              {donations.length * 2} moustiquaires remises
+            </span>
+          </div>
+
+          {/* Filtre par quartier */}
+          <select
+            value={filterNeighborhood}
+            onChange={e => setFilterNeighborhood(e.target.value)}
+            className="text-xs px-2 py-1.5 border border-slate-300 rounded-lg bg-slate-50 focus:outline-none"
+          >
+            <option value="ALL">Tous les quartiers</option>
+            {PRESET_NEIGHBORHOODS.filter(n => n !== 'Autre quartier').map(n => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Barre de recherche rapide */}
+        <div className="relative mb-3">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            placeholder="Rechercher par nom ou numéro de téléphone..."
+            className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-600 focus:outline-none"
+          />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+        </div>
+
+        {/* Tableau / Liste mobile */}
+        {filteredDonations.length === 0 ? (
+          <div className="text-center py-6 text-slate-400 text-xs italic">
+            Aucun donneur correspondant trouvé.
+          </div>
+        ) : (
+          <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+            {filteredDonations.map(item => (
+              <div
+                key={item.id}
+                className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-slate-100/70 transition"
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-xs text-slate-900">{item.fullName}</span>
+                    <span className="text-[10px] bg-teal-600 text-white font-bold px-1.5 py-0.2 rounded">
+                      2 Moustiquaires
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-600">
+                    <span className="flex items-center gap-1 font-mono">
+                      <Phone className="w-3 h-3 text-slate-400" />
+                      {item.phone}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <MapPin className="w-3 h-3 text-teal-600" />
+                      {item.neighborhood}
+                    </span>
+                    <span className="flex items-center gap-1 text-slate-400">
+                      <Clock className="w-3 h-3" />
+                      {new Date(item.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    <span className="text-slate-500">Par: {item.agent}</span>
+                  </div>
+                </div>
+
+                {/* Bouton de correction admin */}
+                {currentUser?.role === 'ADMIN' && (
+                  <button
+                    onClick={() => {
+                      setEditingItem(item);
+                      setEditReason('');
+                    }}
+                    className="self-end sm:self-center px-2 py-1 bg-white border border-slate-300 rounded-lg text-slate-600 hover:text-teal-700 hover:border-teal-400 text-[11px] font-medium flex items-center gap-1 shadow-2xs"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                    <span>Corriger</span>
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Modale de Confirmation OBLIGATOIRE avant déduction du stock */}
+      {confirmModalData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-5 border border-slate-200 space-y-4">
+            <div className="text-center">
+              <div className="w-12 h-12 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center mx-auto mb-2">
+                <CheckCircle2 className="w-7 h-7" />
+              </div>
+              <h4 className="text-base font-bold text-slate-900">Confirmer la remise</h4>
+              <p className="text-xs text-slate-500 mt-1">
+                Le don de sang est-il validé et les 2 moustiquaires ont-elles été remises en main propre ?
+              </p>
+            </div>
+
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1.5">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Bénéficiaire :</span>
+                <span className="font-bold text-slate-800">{confirmModalData.fullName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Téléphone :</span>
+                <span className="font-mono font-bold text-slate-800">{confirmModalData.phone}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Quartier :</span>
+                <span className="font-bold text-teal-700">{confirmModalData.neighborhood}</span>
+              </div>
+              <div className="flex justify-between border-t border-slate-200 pt-1.5">
+                <span className="text-slate-500">Quantité :</span>
+                <span className="font-black text-emerald-700">2 moustiquaires</span>
+              </div>
+            </div>
+
+            {confirmModalData.forceDuplicate && (
+              <div className="p-2.5 bg-amber-50 border border-amber-300 rounded-lg text-amber-800 text-[11px] flex items-center gap-1.5">
+                <ShieldAlert className="w-4 h-4 flex-shrink-0 text-amber-600" />
+                <span>Attention : cette personne semble déjà enregistrée. Forcer tout de même ?</span>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmModalData(null)}
+                className="py-2.5 px-3 bg-slate-100 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-200 transition"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => executeDonation(Boolean(confirmModalData.forceDuplicate))}
+                className="py-2.5 px-3 bg-teal-700 text-white text-xs font-bold rounded-xl hover:bg-teal-800 transition shadow-sm"
+              >
+                {loading ? 'Confirmation...' : 'Oui, Confirmer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modale d'Édition Admin avec Motif obligatoire */}
+      {editingItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-5 border border-slate-200 space-y-3.5">
+            <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <Edit3 className="w-4 h-4 text-teal-700" />
+              Correction de la fiche (Admin)
+            </h4>
+
+            <form onSubmit={handleAdminUpdate} className="space-y-2.5 text-xs">
+              <div>
+                <label className="block font-medium text-slate-700 mb-0.5">Nom et Prénom</label>
+                <input
+                  type="text"
+                  required
+                  value={editingItem.fullName}
+                  onChange={e => setEditingItem({ ...editingItem, fullName: e.target.value })}
+                  className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block font-medium text-slate-700 mb-0.5">Téléphone</label>
+                <input
+                  type="text"
+                  required
+                  value={editingItem.phone}
+                  onChange={e => setEditingItem({ ...editingItem, phone: e.target.value })}
+                  className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block font-medium text-slate-700 mb-0.5">Quartier</label>
+                <input
+                  type="text"
+                  required
+                  value={editingItem.neighborhood}
+                  onChange={e => setEditingItem({ ...editingItem, neighborhood: e.target.value })}
+                  className="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block font-medium text-slate-700 mb-0.5 text-rose-700">
+                  Motif de correction obligatoire (Journal d'audit) *
+                </label>
+                <textarea
+                  required
+                  rows={2}
+                  value={editReason}
+                  onChange={e => setEditReason(e.target.value)}
+                  placeholder="ex: Rectification de l'orthographe du nom..."
+                  className="w-full px-2.5 py-1.5 border border-rose-300 rounded-lg text-xs focus:ring-1 focus:ring-rose-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingItem(null)}
+                  className="py-2 bg-slate-100 text-slate-700 font-bold rounded-lg"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="py-2 bg-teal-700 text-white font-bold rounded-lg"
+                >
+                  {loading ? 'Sauvegarde...' : 'Enregistrer'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,48 @@
+﻿{
+    "auditLogs":  [
+                      {
+                          "timestamp":  "2026-10-26T23:01:33.8071143+00:00",
+                          "user":  "Système",
+                          "id":  "init-1",
+                          "action":  "INITIALISATION",
+                          "details":  "Base de données initialisée pour la Cellule Pastef quartiers: S.M.SY 1/ D.S.2.E"
+                      }
+                  ],
+    "users":  [
+                  {
+                      "username":  "admin",
+                      "pin":  "2026",
+                      "name":  "Administrateur Principal",
+                      "id":  "u-admin",
+                      "role":  "ADMIN"
+                  },
+                  {
+                      "username":  "agent1",
+                      "pin":  "1234",
+                      "name":  "Agent Matin (Don de sang)",
+                      "id":  "u-agent1",
+                      "role":  "AGENT"
+                  },
+                  {
+                      "username":  "agent2",
+                      "pin":  "1234",
+                      "name":  "Agent Soir (Podium)",
+                      "id":  "u-agent2",
+                      "role":  "AGENT"
+                  }
+              ],
+    "morningDonations":  [
+
+                         ],
+    "eveningBeneficiaries":  [
+
+                             ],
+    "stock":  {
+                  "entries":  [
+
+                              ],
+                  "isClosed":  false,
+                  "initialStock":  500
+              },
+    "defaultEveningQty":  2
+}

@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Cellule Pastef quartiers: S.M.SY 1/ D.S.2.E — Gestion Don de Sang & Podium</title>
+  <!-- Tailwind CSS CDN pour affichage instantané et propre sur smartphone Android -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Bibliothèques PDF et Excel embarquées autonomes -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    body { -webkit-tap-highlight-color: transparent; }
+    input, button, select, textarea { touch-action: manipulation; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-900 min-h-screen pb-20">
+
+  <!-- ================= EN-TÊTE PRINCIPAL ================= -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+    <div class="max-w-4xl mx-auto px-3 py-2 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-emerald-700 text-white font-black flex items-center justify-center text-sm shadow-xs">
+          P
+        </div>
+        <div>
+          <h1 class="text-xs sm:text-sm font-bold text-slate-900 leading-tight">
+            Cellule Pastef quartiers: S.M.SY 1/ D.S.2.E
+          </h1>
+          <p class="text-[10px] text-emerald-700 font-semibold">Plateforme de Gestion — Don de Sang & Podium</p>
+        </div>
+      </div>
+
+      <!-- Badges -->
+      <div class="flex items-center gap-2">
+        <div id="stockBadge" class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
+          Stock : <span id="headerStockVal">500</span>
+        </div>
+        <div id="userBadge" class="hidden sm:flex items-center gap-1.5 px-2 py-1 bg-slate-100 rounded-lg text-xs font-medium text-slate-700">
+          <span id="userNameDisplay">Admin</span>
+          <button onclick="logout()" class="text-slate-400 hover:text-rose-600 font-bold ml-1">✕</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= CONTENU PRINCIPAL PAR ONGLET ================= -->
+  <main class="max-w-4xl mx-auto p-3 space-y-4">
+
+    <!-- Onglet 1: TABLEAU DE BORD (Bilan) -->
+    <div id="tab-dashboard" class="space-y-4">
+      <div class="bg-gradient-to-r from-emerald-800 to-emerald-950 text-white p-4 rounded-2xl shadow-sm">
+        <span class="text-[10px] bg-emerald-700/80 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider text-emerald-100">
+          Tableau de bord officiel
+        </span>
+        <h2 class="text-base sm:text-lg font-black mt-1">Cellule Pastef quartiers: S.M.SY 1/ D.S.2.E</h2>
+        <p class="text-xs text-emerald-200">Suivi temps réel des deux opérations de distribution.</p>
+      </div>
+
+      <!-- 4 Blocs clés -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs">
+          <span class="text-[11px] text-slate-500 font-medium">Stock Restant</span>
+          <div id="dashRemainingStock" class="text-2xl font-black text-emerald-700 mt-0.5">500</div>
+          <span class="text-[10px] text-slate-400">moustiquaires</span>
+        </div>
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs">
+          <span class="text-[11px] text-slate-500 font-medium">Total Distribué</span>
+          <div id="dashTotalDistributed" class="text-2xl font-black text-slate-900 mt-0.5">0</div>
+          <span class="text-[10px] text-slate-400">Matin + Soir</span>
+        </div>
+        <div class="bg-teal-50 p-3 rounded-xl border border-teal-200 shadow-xs">
+          <span class="text-[11px] text-teal-800 font-medium">Matin (Sang)</span>
+          <div id="dashMorningDistributed" class="text-2xl font-black text-teal-800 mt-0.5">0</div>
+          <span class="text-[10px] text-teal-600" id="dashMorningCount">0 personnes (×2)</span>
+        </div>
+        <div class="bg-blue-50 p-3 rounded-xl border border-blue-200 shadow-xs">
+          <span class="text-[11px] text-blue-800 font-medium">Soir (Podium)</span>
+          <div id="dashEveningDistributed" class="text-2xl font-black text-blue-800 mt-0.5">0</div>
+          <span class="text-[10px] text-blue-600" id="dashEveningCount">0 servies</span>
+        </div>
+      </div>
+
+      <!-- Répartition par quartier -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200">
+          <h3 class="text-xs font-bold text-teal-800 mb-2 uppercase">Don de sang — Par quartier</h3>
+          <div id="morningNeighborhoodList" class="space-y-1.5 text-xs text-slate-600">
+            <p class="text-slate-400 italic">Aucun don enregistré.</p>
+          </div>
+        </div>
+
+        <div class="bg-white p-3.5 rounded-xl border border-slate-200">
+          <h3 class="text-xs font-bold text-blue-800 mb-2 uppercase">Podium — Par quartier</h3>
+          <div id="eveningNeighborhoodList" class="space-y-1.5 text-xs text-slate-600">
+            <p class="text-slate-400 italic">Aucune liste saisie.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Onglet 2: MATIN — DON DE SANG -->
+    <div id="tab-morning" class="hidden space-y-4">
+      <div class="bg-teal-700 text-white p-3.5 rounded-2xl flex items-center justify-between">
+        <div>
+          <h2 class="text-base font-bold">Module Matin — Don de Sang</h2>
+          <p class="text-xs text-teal-100">Ration fixe : <strong>2 moustiquaires</strong> par donneur confirmé.</p>
+        </div>
+      </div>
+
+      <!-- Formulaire Saisie Matin -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+        <h3 class="text-xs font-bold uppercase text-slate-700 tracking-wider">Enregistrer un Donneur</h3>
+
+        <form onsubmit="handleMorningSubmit(event)" class="space-y-3 text-xs">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Nom et Prénom *</label>
+            <input type="text" id="mornName" required placeholder="ex: Abdoulaye Fall" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-teal-600 focus:outline-none">
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Téléphone *</label>
+            <input type="tel" id="mornPhone" required placeholder="ex: 77 123 45 67" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-teal-600 focus:outline-none">
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Quartier *</label>
+            <select id="mornQuarter" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-teal-600 focus:outline-none">
+              <option value="S.M.SY 1">S.M.SY 1</option>
+              <option value="D.S.2.E">D.S.2.E</option>
+              <option value="S.M.SY 2">S.M.SY 2</option>
+              <option value="Autre quartier">Autre quartier</option>
+            </select>
+          </div>
+
+          <div class="p-2.5 bg-teal-50 border border-teal-200 rounded-xl flex items-center justify-between font-bold text-teal-900">
+            <span>Ration remise :</span>
+            <span class="bg-white px-2 py-0.5 rounded border border-teal-200">2 Moustiquaires</span>
+          </div>
+
+          <button type="submit" class="w-full py-3 bg-teal-700 hover:bg-teal-800 text-white font-bold rounded-xl text-sm shadow-sm active:scale-98 transition">
+            Valider et Confirmer la Remise (2 moust.)
+          </button>
+        </form>
+      </div>
+
+      <!-- Liste des donneurs -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-bold uppercase text-slate-700">Donneurs Enregistrés (<span id="mornTotalCount">0</span>)</h3>
+          <span class="text-xs font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full"><span id="mornTotalNets">0</span> moust. remises</span>
+        </div>
+        <input type="text" id="mornSearch" oninput="renderMorningList()" placeholder="Rechercher par nom ou numéro..." class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs">
+        <div id="morningItemsContainer" class="space-y-2 max-h-80 overflow-y-auto"></div>
+      </div>
+    </div>
+
+    <!-- Onglet 3: SOIR — PODIUM -->
+    <div id="tab-evening" class="hidden space-y-4">
+      <div class="bg-blue-800 text-white p-3.5 rounded-2xl flex items-center justify-between">
+        <div>
+          <h2 class="text-base font-bold">Module Soir — Distribution Podium</h2>
+          <p class="text-xs text-blue-100">Bénéficiaires recensés par les chefs de quartier.</p>
+        </div>
+        <button onclick="openCensusModal()" class="px-2.5 py-1.5 bg-white text-blue-900 rounded-xl font-bold text-xs shadow-xs">
+          + Saisir listes
+        </button>
+      </div>
+
+      <!-- Compteurs Soir -->
+      <div class="grid grid-cols-3 gap-2 text-center text-xs">
+        <div class="bg-white p-2 rounded-xl border border-slate-200">
+          <span class="text-slate-500">Recensés</span>
+          <div id="eveCensusCount" class="text-base font-black text-slate-900">0</div>
+        </div>
+        <div class="bg-emerald-50 p-2 rounded-xl border border-emerald-200">
+          <span class="text-emerald-700">Servis</span>
+          <div id="eveServedCount" class="text-base font-black text-emerald-700">0</div>
+        </div>
+        <div class="bg-amber-50 p-2 rounded-xl border border-amber-200">
+          <span class="text-amber-700">En attente</span>
+          <div id="evePendingCount" class="text-base font-black text-amber-700">0</div>
+        </div>
+      </div>
+
+      <!-- Recherche Podium -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+        <h3 class="text-xs font-bold uppercase text-slate-700">Recherche Rapide au Podium</h3>
+        <input type="text" id="eveSearch" oninput="renderEveningList()" placeholder="Tapez le nom ou le téléphone..." class="w-full px-3 py-2.5 border-2 border-blue-200 rounded-xl text-sm font-semibold focus:border-blue-600 focus:outline-none">
+        
+        <div class="flex gap-2 text-xs">
+          <button onclick="setEveFilter('ALL')" id="flt-all" class="px-2.5 py-1 rounded-lg bg-blue-700 text-white font-bold">Tous</button>
+          <button onclick="setEveFilter('EN_ATTENTE')" id="flt-wait" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700">En attente</button>
+          <button onclick="setEveFilter('SERVI')" id="flt-serv" class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700">Déjà servis</button>
+        </div>
+
+        <div id="eveningItemsContainer" class="space-y-2 max-h-96 overflow-y-auto"></div>
+      </div>
+    </div>
+
+    <!-- Onglet 4: GESTION DU STOCK -->
+    <div id="tab-stock" class="hidden space-y-4">
+      <div class="bg-emerald-800 text-white p-3.5 rounded-2xl flex items-center justify-between">
+        <div>
+          <h2 class="text-base font-bold">Gestion Centrale du Stock</h2>
+          <p class="text-xs text-emerald-100">Stock unique et partagé entre les deux circuits.</p>
+        </div>
+        <button onclick="openStockEntryModal()" class="px-2.5 py-1.5 bg-white text-emerald-900 rounded-xl font-bold text-xs shadow-xs">
+          + Nouvelle livraison
+        </button>
+      </div>
+
+      <!-- Équation Comptable du Stock -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+        <h3 class="text-xs font-bold uppercase text-slate-700">Situation Comptable</h3>
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs">
+          <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+            <span class="text-slate-500">Initial</span>
+            <div id="stkInit" class="text-lg font-black text-slate-900">500</div>
+          </div>
+          <div class="bg-emerald-50 p-2.5 rounded-xl border border-emerald-200">
+            <span class="text-emerald-700">+ Entrées</span>
+            <div id="stkEntries" class="text-lg font-black text-emerald-700">+0</div>
+          </div>
+          <div class="bg-teal-50 p-2.5 rounded-xl border border-teal-200">
+            <span class="text-teal-700">− Matin</span>
+            <div id="stkMornOut" class="text-lg font-black text-teal-800">−0</div>
+          </div>
+          <div class="bg-blue-50 p-2.5 rounded-xl border border-blue-200">
+            <span class="text-blue-700">− Soir</span>
+            <div id="stkEveOut" class="text-lg font-black text-blue-800">−0</div>
+          </div>
+          <div class="col-span-2 sm:col-span-1 bg-emerald-700 text-white p-2.5 rounded-xl">
+            <span class="text-emerald-100 font-bold">= RESTANT</span>
+            <div id="stkRemaining" class="text-xl font-black">500</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Historique des livraisons -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-2">
+        <h3 class="text-xs font-bold uppercase text-slate-700">Historique des Livraisons Réceptionnées</h3>
+        <div id="stockEntriesContainer" class="space-y-1.5 text-xs">
+          <p class="text-slate-400 italic">Aucune livraison supplémentaire.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Onglet 5: RAPPORTS & CLÔTURE -->
+    <div id="tab-reports" class="hidden space-y-4">
+      <div class="bg-slate-800 text-white p-3.5 rounded-2xl">
+        <h2 class="text-base font-bold">Rapports Officiels & Clôture</h2>
+        <p class="text-xs text-slate-300">Génération des procès-verbaux de distribution.</p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+          <h3 class="font-bold text-sm text-slate-900">Rapport Récapitulatif PDF Officiel</h3>
+          <p class="text-xs text-slate-500">Document officiel complet avec en-tête de la cellule, bilans séparés matin/soir, stock et signatures.</p>
+          <button onclick="downloadOfficialPDF()" class="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs">
+            📄 Télécharger le Rapport PDF
+          </button>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+          <h3 class="font-bold text-sm text-slate-900">Classeur Excel Complet (.xlsx)</h3>
+          <p class="text-xs text-slate-500">Export structuré sur 4 feuilles : Bilan Stock, Liste Don de sang, Liste Podium, et Journal d'Audit.</p>
+          <button onclick="downloadExcelFile()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl text-xs">
+            📊 Télécharger le Fichier Excel
+          </button>
+        </div>
+      </div>
+
+      <!-- Clôture -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+        <div>
+          <span class="text-xs font-semibold text-slate-600">Statut des opérations :</span>
+          <span id="closeStatusLabel" class="ml-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">EN COURS</span>
+        </div>
+        <button id="closeBtn" onclick="toggleClose()" class="px-3 py-1.5 bg-rose-600 text-white rounded-xl text-xs font-bold shadow-xs">
+          Clôturer la Journée
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ================= BARRE DE NAVIGATION INFÉRIEURE MOBILE ================= -->
+  <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-lg px-2 py-1.5 z-40 flex justify-around text-[10px]">
+    <button onclick="switchTab('dashboard')" id="nav-dashboard" class="flex flex-col items-center py-1 font-bold text-emerald-700">
+      <span class="text-base">📊</span>
+      <span>Bilan</span>
+    </button>
+    <button onclick="switchTab('morning')" id="nav-morning" class="flex flex-col items-center py-1 font-medium text-slate-500">
+      <span class="text-base">🩸</span>
+      <span>Matin</span>
+    </button>
+    <button onclick="switchTab('evening')" id="nav-evening" class="flex flex-col items-center py-1 font-medium text-slate-500">
+      <span class="text-base">🎪</span>
+      <span>Podium</span>
+    </button>
+    <button onclick="switchTab('stock')" id="nav-stock" class="flex flex-col items-center py-1 font-medium text-slate-500">
+      <span class="text-base">📦</span>
+      <span>Stock</span>
+    </button>
+    <button onclick="switchTab('reports')" id="nav-reports" class="flex flex-col items-center py-1 font-medium text-slate-500">
+      <span class="text-base">📑</span>
+      <span>Rapports</span>
+    </button>
+  </nav>
+
+  <!-- ================= LOGIQUE JS AUTONOME ================= -->
+  <script>
+    const CELL_NAME = "Cellule Pastef quartiers: S.M.SY 1/ D.S.2.E";
+
+    // Modèle de données stocké localement
+    let state = {
+      stockInitial: 500,
+      stockEntries: [],
+      isClosed: false,
+      morningDonations: [],
+      eveningBeneficiaries: [],
+      auditLogs: []
+    };
+
+    // Chargement persistant
+    function loadState() {
+      const saved = localStorage.getItem('cellule_pastef_db');
+      if (saved) {
+        try { state = JSON.parse(saved); } catch(e){}
+      }
+      renderAll();
+    }
+
+    function saveState(action, details) {
+      if (action) {
+        state.auditLogs.unshift({
+          timestamp: new Date().toISOString(),
+          user: 'Admin',
+          action: action,
+          details: details
+        });
+      }
+      localStorage.setItem('cellule_pastef_db', JSON.stringify(state));
+      renderAll();
+    }
+
+    function calculate() {
+      const initial = state.stockInitial || 500;
+      const entries = state.stockEntries.reduce((s, e) => s + e.qty, 0);
+      const morningOut = state.morningDonations.length * 2;
+      const eveningOut = state.eveningBeneficiaries
+        .filter(b => b.status === 'SERVI')
+        .reduce((s, b) => s + (b.qty || 2), 0);
+      const totalOut = morningOut + eveningOut;
+      const remaining = initial + entries - totalOut;
+
+      return { initial, entries, morningOut, eveningOut, totalOut, remaining };
+    }
+
+    function switchTab(tabId) {
+      ['dashboard', 'morning', 'evening', 'stock', 'reports'].forEach(id => {
+        document.getElementById(`tab-${id}`).classList.add('hidden');
+        document.getElementById(`nav-${id}`).className = 'flex flex-col items-center py-1 font-medium text-slate-500';
+      });
+      document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+      document.getElementById(`nav-${tabId}`).className = 'flex flex-col items-center py-1 font-bold text-emerald-700';
+    }
+
+    function renderAll() {
+      const calc = calculate();
+      document.getElementById('headerStockVal').innerText = calc.remaining;
+      document.getElementById('dashRemainingStock').innerText = calc.remaining;
+      document.getElementById('dashTotalDistributed').innerText = calc.totalOut;
+      document.getElementById('dashMorningDistributed').innerText = calc.morningOut;
+      document.getElementById('dashMorningCount').innerText = `${state.morningDonations.length} personnes (×2)`;
+      document.getElementById('dashEveningDistributed').innerText = calc.eveningOut;
+      const eveServed = state.eveningBeneficiaries.filter(b => b.status === 'SERVI').length;
+      document.getElementById('dashEveningCount').innerText = `${eveServed} servies`;
+
+      document.getElementById('stkInit').innerText = calc.initial;
+      document.getElementById('stkEntries').innerText = `+${calc.entries}`;
+      document.getElementById('stkMornOut').innerText = `−${calc.morningOut}`;
+      document.getElementById('stkEveOut').innerText = `−${calc.eveningOut}`;
+      document.getElementById('stkRemaining').innerText = calc.remaining;
+
+      // Quartiers Matin
+      const mornQ = {};
+      state.morningDonations.forEach(d => { mornQ[d.neighborhood] = (mornQ[d.neighborhood] || 0) + 1; });
+      const mornQKeys = Object.keys(mornQ);
+      document.getElementById('morningNeighborhoodList').innerHTML = mornQKeys.length ? mornQKeys.map(k => `
+        <div class="flex justify-between py-1 border-b border-slate-100">
+          <span>${k}</span>
+          <span class="font-bold text-teal-800">${mornQ[k]} donneur(s) (${mornQ[k]*2} moust.)</span>
+        </div>
+      `).join('') : '<p class="text-slate-400 italic">Aucun don enregistré.</p>';
+
+      // Quartiers Soir
+      const eveQ = {};
+      state.eveningBeneficiaries.forEach(b => { eveQ[b.neighborhood] = (eveQ[b.neighborhood] || 0) + 1; });
+      const eveQKeys = Object.keys(eveQ);
+      document.getElementById('eveningNeighborhoodList').innerHTML = eveQKeys.length ? eveQKeys.map(k => `
+        <div class="flex justify-between py-1 border-b border-slate-100">
+          <span>${k}</span>
+          <span class="font-bold text-blue-800">${eveQ[k]} recensé(s)</span>
+        </div>
+      `).join('') : '<p class="text-slate-400 italic">Aucune liste saisie.</p>';
+
+      renderMorningList();
+      renderEveningList();
+
+      // Livraisons
+      document.getElementById('stockEntriesContainer').innerHTML = state.stockEntries.length ? state.stockEntries.map(e => `
+        <div class="p-2 bg-slate-50 rounded-lg border border-slate-200 flex justify-between">
+          <span class="font-bold text-emerald-800">+${e.qty} moustiquaires (${e.reason})</span>
+          <span class="text-slate-400">${new Date(e.date).toLocaleDateString()}</span>
+        </div>
+      `).join('') : '<p class="text-slate-400 italic">Aucune livraison enregistrée.</p>';
+
+      // Clôture
+      const closeLabel = document.getElementById('closeStatusLabel');
+      const closeBtn = document.getElementById('closeBtn');
+      if (state.isClosed) {
+        closeLabel.innerText = 'CLÔTURÉ';
+        closeLabel.className = 'ml-1 text-xs font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200';
+        closeBtn.innerText = 'Réouvrir la journée';
+        closeBtn.className = 'px-3 py-1.5 bg-amber-600 text-white rounded-xl text-xs font-bold shadow-xs';
+      } else {
+        closeLabel.innerText = 'EN COURS';
+        closeLabel.className = 'ml-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200';
+        closeBtn.innerText = 'Clôturer la Journée';
+        closeBtn.className = 'px-3 py-1.5 bg-rose-600 text-white rounded-xl text-xs font-bold shadow-xs';
+      }
+    }
+
+    // Gestion Matin
+    function handleMorningSubmit(e) {
+      e.preventDefault();
+      if (state.isClosed) { alert('Journée clôturée !'); return; }
+      const calc = calculate();
+      if (calc.remaining < 2) { alert('Stock insuffisant !'); return; }
+
+      const name = document.getElementById('mornName').value.trim();
+      const phone = document.getElementById('mornPhone').value.trim();
+      const neighborhood = document.getElementById('mornQuarter').value;
+
+      // Doublon ?
+      const dup = state.morningDonations.find(d => d.phone.replace(/\\s/g,'') === phone.replace(/\\s/g,''));
+      if (dup) {
+        if (!confirm(`Doublon détecté : ${dup.fullName} (${dup.phone}) a déjà été enregistré. Forcer l'enregistrement ?`)) {
+          return;
+        }
+      }
+
+      state.morningDonations.unshift({
+        id: 'm-' + Date.now(),
+        fullName: name,
+        phone: phone,
+        neighborhood: neighborhood,
+        qty: 2,
+        date: new Date().toISOString()
+      });
+
+      document.getElementById('mornName').value = '';
+      document.getElementById('mornPhone').value = '';
+      saveState('REMISE_MATIN', `Don de sang : 2 moustiquaires remises à ${name} (${phone}, ${neighborhood})`);
+      alert(`Remise confirmée : 2 moustiquaires remises à ${name}.`);
+    }
+
+    function renderMorningList() {
+      const q = (document.getElementById('mornSearch')?.value || '').toLowerCase();
+      const items = state.morningDonations.filter(d => d.fullName.toLowerCase().includes(q) || d.phone.includes(q));
+      document.getElementById('mornTotalCount').innerText = state.morningDonations.length;
+      document.getElementById('mornTotalNets').innerText = state.morningDonations.length * 2;
+
+      document.getElementById('morningItemsContainer').innerHTML = items.length ? items.map(d => `
+        <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex justify-between items-center text-xs">
+          <div>
+            <div class="font-bold text-slate-800">${d.fullName} <span class="text-teal-700 bg-teal-100 px-1 rounded text-[10px]">2 moust.</span></div>
+            <div class="text-slate-500 text-[11px]">${d.phone} • ${d.neighborhood}</div>
+          </div>
+          <span class="text-[10px] text-slate-400 font-mono">${new Date(d.date).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})}</span>
+        </div>
+      `).join('') : '<p class="text-slate-400 italic py-2 text-center">Aucun enregistrement.</p>';
+    }
+
+    // Gestion Soir
+    let eveFilter = 'ALL';
+    function setEveFilter(f) {
+      eveFilter = f;
+      ['all', 'wait', 'serv'].forEach(id => document.getElementById(`flt-${id}`).className = 'px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700');
+      if (f === 'ALL') document.getElementById('flt-all').className = 'px-2.5 py-1 rounded-lg bg-blue-700 text-white font-bold';
+      if (f === 'EN_ATTENTE') document.getElementById('flt-wait').className = 'px-2.5 py-1 rounded-lg bg-amber-600 text-white font-bold';
+      if (f === 'SERVI') document.getElementById('flt-serv').className = 'px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-bold';
+      renderEveningList();
+    }
+
+    function renderEveningList() {
+      const q = (document.getElementById('eveSearch')?.value || '').toLowerCase();
+      const filtered = state.eveningBeneficiaries.filter(b => {
+        const match = b.fullName.toLowerCase().includes(q) || b.phone.includes(q);
+        const matchF = eveFilter === 'ALL' || b.status === eveFilter;
+        return match && matchF;
+      });
+
+      const total = state.eveningBeneficiaries.length;
+      const served = state.eveningBeneficiaries.filter(b => b.status === 'SERVI').length;
+      document.getElementById('eveCensusCount').innerText = total;
+      document.getElementById('eveServedCount').innerText = served;
+      document.getElementById('evePendingCount').innerText = total - served;
+
+      document.getElementById('eveningItemsContainer').innerHTML = filtered.length ? filtered.map(b => `
+        <div class="p-3 bg-white border border-slate-200 rounded-xl flex justify-between items-center text-xs">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-slate-900">${b.fullName}</span>
+              <span class="text-[10px] font-bold px-1.5 py-0.2 rounded ${b.status === 'SERVI' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                ${b.status === 'SERVI' ? `✓ SERVI (${b.qty} moust.)` : '⏳ EN ATTENTE'}
+              </span>
+            </div>
+            <div class="text-slate-500 text-[11px]">${b.phone} • ${b.neighborhood} (Liste: ${b.chief})</div>
+          </div>
+          <div>
+            ${b.status !== 'SERVI' ? `
+              <button onclick="servePodium('${b.id}')" class="px-3 py-1.5 bg-blue-700 text-white font-bold rounded-lg hover:bg-blue-800 text-xs shadow-xs">
+                Servir
+              </button>
+            ` : '<span class="text-[10px] text-slate-400 font-bold">Terminé</span>'}
+          </div>
+        </div>
+      `).join('') : '<p class="text-slate-400 italic py-4 text-center">Aucun résultat trouvé.</p>';
+    }
+
+    function servePodium(id) {
+      if (state.isClosed) { alert('Journée clôturée !'); return; }
+      const item = state.eveningBeneficiaries.find(b => b.id === id);
+      if (!item) return;
+      if (item.status === 'SERVI') { alert('ATTENTION : Ce bénéficiaire a déjà été servi !'); return; }
+
+      const qtyStr = prompt(`Quantité de moustiquaires à remettre à ${item.fullName} :`, "2");
+      if (!qtyStr) return;
+      const qty = parseInt(qtyStr, 10);
+      if (isNaN(qty) || qty <= 0) { alert('Quantité invalide.'); return; }
+
+      const calc = calculate();
+      if (qty > calc.remaining) { alert(`Stock insuffisant (${calc.remaining} disponible) !`); return; }
+
+      item.status = 'SERVI';
+      item.qty = qty;
+      item.servedAt = new Date().toISOString();
+
+      saveState('REMISE_SOIR', `Podium : ${qty} moustiquaires remises à ${item.fullName} (${item.phone})`);
+      alert(`Distribution validée : ${qty} moustiquaires remises à ${item.fullName}.`);
+    }
+
+    function openCensusModal() {
+      const input = prompt("Entrez les personnes sous le format : Nom, Téléphone, Quartier, Chef (une par ligne ou séparées par des points-virgules) :\\nExemple : Moussa Sow, 771112233, S.M.SY 1, Chef Sow");
+      if (!input) return;
+
+      const lines = input.split(/\\n|;/).filter(l => l.trim().length > 0);
+      let count = 0;
+      lines.forEach(l => {
+        const parts = l.split(',').map(p => p.trim());
+        if (parts[0] && parts[1]) {
+          state.eveningBeneficiaries.unshift({
+            id: 'e-' + Date.now() + Math.random().toString(36).substring(2,5),
+            fullName: parts[0],
+            phone: parts[1],
+            neighborhood: parts[2] || 'S.M.SY 1',
+            chief: parts[3] || 'Liste Chef',
+            status: 'EN_ATTENTE',
+            qty: 0
+          });
+          count++;
+        }
+      });
+
+      saveState('RECENSEMENT_CHEF', `${count} bénéficiaires recensés ajoutés à la liste.`);
+      alert(`${count} personne(s) ajoutée(s) à la liste du soir.`);
+    }
+
+    function openStockEntryModal() {
+      const qtyStr = prompt("Quantité de moustiquaires reçues :");
+      if (!qtyStr) return;
+      const qty = parseInt(qtyStr, 10);
+      if (isNaN(qty) || qty <= 0) { alert('Quantité invalide.'); return; }
+
+      const reason = prompt("Motif / Fournisseur / Bon de livraison :", "Livraison complémentaire");
+      if (!reason) return;
+
+      state.stockEntries.push({
+        id: 'stk-' + Date.now(),
+        qty: qty,
+        reason: reason,
+        date: new Date().toISOString()
+      });
+
+      saveState('ENTREE_STOCK', `Ajout de ${qty} moustiquaires au stock (${reason})`);
+      alert(`${qty} moustiquaires ajoutées avec succès au stock.`);
+    }
+
+    function toggleClose() {
+      if (!state.isClosed) {
+        if (confirm("Confirmez-vous la clôture définitive des opérations pour aujourd'hui ?")) {
+          state.isClosed = true;
+          saveState('CLOTURE_JOURNEE', 'Clôture définitive des opérations');
+          alert('Journée clôturée avec succès.');
+        }
+      } else {
+        const reason = prompt("Motif obligatoire pour la réouverture exceptionnelle :");
+        if (!reason) return;
+        state.isClosed = false;
+        saveState('REOUVERTURE_EXCEPTIONNELLE', `Réouverture : ${reason}`);
+        alert('Opérations réouvertes.');
+      }
+    }
+
+    // Export PDF Officiel
+    function downloadOfficialPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      const calc = calculate();
+
+      doc.setFillColor(11, 102, 35);
+      doc.rect(0, 0, 210, 22, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('RÉPUBLIQUE DU SÉNÉGAL', 105, 9, { align: 'center' });
+      doc.setFontSize(11);
+      doc.text(CELL_NAME.toUpperCase(), 105, 17, { align: 'center' });
+
+      doc.setTextColor(30, 41, 59);
+      doc.setFontSize(15);
+      doc.text('RAPPORT DE DISTRIBUTION DE MOUSTIQUAIRES', 105, 34, { align: 'center' });
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Généré le : ${new Date().toLocaleString('fr-FR')} — Statut : ${state.isClosed ? 'CLÔTURÉ' : 'EN COURS'}`, 105, 41, { align: 'center' });
+
+      // Tableau Stock
+      doc.autoTable({
+        startY: 48,
+        head: [['Indicateur de Stock', 'Quantité']],
+        body: [
+          ['Stock Initial', `${calc.initial} moustiquaires`],
+          ['Nouvelles entrées enregistrées', `+ ${calc.entries} moustiquaires`],
+          ['Total distribué le Matin (Don de sang)', `- ${calc.morningOut} moustiquaires (${state.morningDonations.length} personnes × 2)`],
+          ['Total distribué le Soir (Podium)', `- ${calc.eveningOut} moustiquaires`],
+          ['TOTAL CUMULÉ DISTRIBUÉ', `${calc.totalOut} moustiquaires`],
+          ['STOCK FINAL RESTANT', `${calc.remaining} moustiquaires`]
+        ],
+        theme: 'grid',
+        headStyles: { fillColor: [11, 102, 35] }
+      });
+
+      // Signatures
+      let finalY = doc.lastAutoTable.finalY + 20;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Le Coordonnateur de Cellule', 30, finalY);
+      doc.text("L'Administrateur de Plateforme", 130, finalY);
+
+      doc.save(`Rapport_Pastef_${new Date().toISOString().split('T')[0]}.pdf`);
+    }
+
+    // Export Excel
+    function downloadExcelFile() {
+      const calc = calculate();
+      const wb = XLSX.utils.book_new();
+
+      const wsStock = XLSX.utils.json_to_sheet([
+        { Indicateur: 'Cellule', Valeur: CELL_NAME },
+        { Indicateur: 'Date', Valeur: new Date().toLocaleDateString() },
+        { Indicateur: 'Stock Initial', Valeur: calc.initial },
+        { Indicateur: 'Entrées', Valeur: calc.entries },
+        { Indicateur: 'Sorties Matin (Sang)', Valeur: calc.morningOut },
+        { Indicateur: 'Sorties Soir (Podium)', Valeur: calc.eveningOut },
+        { Indicateur: 'Total Distribué', Valeur: calc.totalOut },
+        { Indicateur: 'Stock Restant', Valeur: calc.remaining }
+      ]);
+      XLSX.utils.book_append_sheet(wb, wsStock, 'Stock');
+
+      const wsMorn = XLSX.utils.json_to_sheet(state.morningDonations);
+      XLSX.utils.book_append_sheet(wb, wsMorn, 'Don_De_Sang_Matin');
+
+      const wsEve = XLSX.utils.json_to_sheet(state.eveningBeneficiaries);
+      XLSX.utils.book_append_sheet(wb, wsEve, 'Podium_Soir');
+
+      const wsAudit = XLSX.utils.json_to_sheet(state.auditLogs);
+      XLSX.utils.book_append_sheet(wb, wsAudit, 'Journal_Audit');
+
+      XLSX.writeFile(wb, `Export_Pastef_${new Date().toISOString().split('T')[0]}.xlsx`);
+    }
+
+    loadState();
+  </script>
+</body>
+</html>
