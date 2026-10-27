@@ -89,26 +89,37 @@
 
   <!-- ================= EN-TÊTE SIMPLIFIÉ ================= -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
-    <div class="max-w-2xl mx-auto px-4 py-2.5 flex items-center justify-between">
-      <div class="flex items-center gap-2.5 min-w-0">
-        <img src="pastef-logo.png" alt="Pastef" class="h-9 w-9 object-contain rounded-xl flex-shrink-0 bg-white p-0.5 border border-slate-100 shadow-2xs">
+    <div class="max-w-2xl mx-auto px-3 py-2 flex items-center justify-between gap-2">
+      <!-- Logo + Titre Cellule (adapté Android/mobile) -->
+      <div class="flex items-center gap-2 min-w-0 flex-1">
+        <img src="pastef-logo.png" alt="Pastef" class="h-8 w-8 object-contain rounded-lg flex-shrink-0 bg-white p-0.5 border border-slate-100 shadow-2xs">
         <div class="min-w-0">
-          <h1 class="text-xs sm:text-sm font-black text-slate-900 leading-tight truncate">
-            Cellule Pastef Serigne Mansour Sy 1 / Darou Salam 2 Extension
+          <h1 class="text-xs sm:text-sm font-black text-slate-900 leading-tight">
+            Cellule Pastef
           </h1>
-          <p id="roleSubtitle" class="text-[10px] text-pastef-green font-bold truncate">
-            Session active
+          <p class="text-[10px] text-slate-600 font-medium leading-tight">
+            Serigne Mansour Sy 1 · Darou Salam 2 Ext.
           </p>
         </div>
       </div>
 
-      <!-- Zone utilisateur & Stock (Stock UNIQUEMENT visible pour l'ADMIN) -->
-      <div class="flex items-center gap-2 flex-shrink-0">
-        <div id="adminStockBadge" class="hidden px-2.5 py-1 rounded-full text-xs font-black bg-pastef-lightGreen text-pastef-darkGreen border border-pastef-green">
-          📦 Stock : <span id="headerStockVal">500</span>
+      <!-- Zone utilisateur & Déconnexion (compacte pour laisser la place au titre) -->
+      <div class="flex items-center gap-1.5 flex-shrink-0">
+        <!-- Badge utilisateur / rôle -->
+        <div class="px-2 py-0.5 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          <span id="roleSubtitle" class="text-[11px] font-bold">Agent</span>
         </div>
-        <button onclick="logout()" class="px-2.5 py-1 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-pastef-red rounded-xl text-xs font-bold border border-slate-200 transition">
-          Quitter
+
+        <!-- Stock ADMIN uniquement -->
+        <div id="adminStockBadge" class="hidden px-2 py-0.5 rounded-lg text-[11px] font-black bg-emerald-50 text-emerald-800 border border-emerald-300">
+          📦 <span id="headerStockVal">500</span>
+        </div>
+
+        <!-- Bouton Déconnexion compact -->
+        <button onclick="logout()" title="Se déconnecter" class="p-1.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-pastef-red rounded-lg text-xs font-bold border border-slate-200 transition flex items-center justify-center">
+          <span class="hidden sm:inline">Quitter</span>
+          <span class="sm:hidden text-xs">🚪</span>
         </button>
       </div>
     </div>
@@ -384,11 +395,11 @@
       if (isAdmin) {
         stockBadge.classList.remove('hidden');
         adminTabBtn.classList.remove('hidden');
-        roleSubtitle.innerText = `${currentUser.name} (Administrateur)`;
+        roleSubtitle.innerText = 'Admin';
       } else {
         stockBadge.classList.add('hidden');
         adminTabBtn.classList.add('hidden');
-        roleSubtitle.innerText = `${currentUser.name} (Agent)`;
+        roleSubtitle.innerText = 'Agent';
       }
     }
 
