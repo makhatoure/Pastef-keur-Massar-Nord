@@ -503,6 +503,7 @@
 
       // Répartition par quartier
       const statsNeighContainer = document.getElementById('statsNeighborhoodContainer');
+      if (statsNeighContainer) {
         const quarters = [
           'Serigne Mansour Sy 1',
           'Darou Salam 2 Extension',
@@ -566,7 +567,7 @@
       }]).select().single();
 
       btn.disabled = false;
-      btn.innerText = "✓ Confirmer Remise (2 moustiquaires)";
+      btn.innerText = "✓ Enregistrer le Don";
 
       if (error) { alert("Erreur: " + error.message); return; }
 
