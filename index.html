@@ -49,7 +49,7 @@
         <div class="w-20 h-20 bg-white rounded-2xl p-2 flex items-center justify-center mx-auto mb-3 shadow-md">
           <img src="pastef-logo.png" alt="Logo Pastef" class="w-full h-full object-contain">
         </div>
-        <h2 class="text-base font-black tracking-tight leading-snug">Cellule Pastef quartiers:<br>S.M.SY 1/ D.S.2.E</h2>
+        <h2 class="text-base font-black tracking-tight leading-snug">Cellule Pastef quartiers :<br>Serigne Mansour Sy 1 / Darou Salam 2 Extension</h2>
         <p class="text-emerald-100 text-xs mt-1 font-medium">Espace de saisie & distribution</p>
       </div>
 
@@ -94,7 +94,7 @@
         <img src="pastef-logo.png" alt="Pastef" class="h-9 w-9 object-contain rounded-xl flex-shrink-0 bg-white p-0.5 border border-slate-100 shadow-2xs">
         <div class="min-w-0">
           <h1 class="text-xs sm:text-sm font-black text-slate-900 leading-tight truncate">
-            Cellule Pastef S.M.SY 1 / D.S.2.E
+            Cellule Pastef Serigne Mansour Sy 1 / Darou Salam 2 Extension
           </h1>
           <p id="roleSubtitle" class="text-[10px] text-pastef-green font-bold truncate">
             Session active
@@ -154,32 +154,38 @@
 
         <form onsubmit="handleMorningSubmit(event)" class="space-y-3.5 text-xs">
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Nom et Prénom du Donneur *</label>
-            <input type="text" id="mornName" required placeholder="ex: Amadou Diallo" class="w-full px-3.5 py-3 border border-slate-300 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-pastef-red focus:outline-none">
+            <label class="block font-bold text-slate-700 mb-1">Nom et Prénom du Donneur <span class="text-slate-400 font-normal">(Optionnel)</span></label>
+            <input type="text" id="mornName" placeholder="ex: Amadou Diallo (ou laisser vide)" class="w-full px-3.5 py-3 border border-slate-300 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-pastef-red focus:outline-none">
           </div>
 
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Numéro de Téléphone *</label>
-            <input type="tel" id="mornPhone" required placeholder="ex: 77 123 45 67" class="w-full px-3.5 py-3 border border-slate-300 rounded-2xl text-sm font-mono font-medium focus:ring-2 focus:ring-pastef-red focus:outline-none">
+            <label class="block font-bold text-slate-700 mb-1">Numéro de Téléphone <span class="text-slate-400 font-normal">(Optionnel)</span></label>
+            <input type="tel" id="mornPhone" placeholder="ex: 77 123 45 67 (ou laisser vide)" class="w-full px-3.5 py-3 border border-slate-300 rounded-2xl text-sm font-mono font-medium focus:ring-2 focus:ring-pastef-red focus:outline-none">
           </div>
 
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Quartier *</label>
-            <div class="grid grid-cols-2 gap-2">
-              <button type="button" onclick="setMornQuarter('S.M.SY 1')" id="mq-smsy1" class="py-2.5 px-3 rounded-xl border-2 border-pastef-red bg-pastef-lightRed font-bold text-pastef-red text-center">
-                S.M.SY 1
+            <label class="block font-bold text-slate-700 mb-1">Quartier</label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+              <button type="button" onclick="setMornQuarter('Serigne Mansour Sy 1')" id="mq-smsy1" class="py-2.5 px-3 rounded-xl border-2 border-pastef-red bg-pastef-lightRed font-bold text-pastef-red text-center text-xs">
+                Serigne Mansour Sy 1
               </button>
-              <button type="button" onclick="setMornQuarter('D.S.2.E')" id="mq-ds2e" class="py-2.5 px-3 rounded-xl border border-slate-200 bg-slate-50 font-bold text-slate-700 text-center">
-                D.S.2.E
+              <button type="button" onclick="setMornQuarter('Darou Salam 2 Extension')" id="mq-ds2e" class="py-2.5 px-3 rounded-xl border border-slate-200 bg-slate-50 font-bold text-slate-700 text-center text-xs">
+                Darou Salam 2 Extension
               </button>
-              <button type="button" onclick="setMornQuarter('S.M.SY 2')" id="mq-smsy2" class="py-2.5 px-3 rounded-xl border border-slate-200 bg-slate-50 font-bold text-slate-700 text-center">
-                S.M.SY 2
+              <button type="button" onclick="setMornQuarter('Serigne Mansour Sy 2')" id="mq-smsy2" class="py-2.5 px-3 rounded-xl border border-slate-200 bg-slate-50 font-bold text-slate-700 text-center text-xs">
+                Serigne Mansour Sy 2
               </button>
-              <button type="button" onclick="setMornQuarter('Autre quartier')" id="mq-autre" class="py-2.5 px-3 rounded-xl border border-slate-200 bg-slate-50 font-bold text-slate-700 text-center">
+              <button type="button" onclick="setMornQuarter('Autre quartier')" id="mq-autre" class="py-2.5 px-3 rounded-xl border border-slate-200 bg-slate-50 font-bold text-slate-700 text-center text-xs">
                 Autre quartier
               </button>
             </div>
-            <input type="hidden" id="selectedMornQuarter" value="S.M.SY 1">
+            <input type="hidden" id="selectedMornQuarter" value="Serigne Mansour Sy 1">
+
+            <!-- Nom du chef de quartier modifiable -->
+            <div class="mt-2">
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Chef de quartier / Liste : <span class="text-slate-400 font-normal">(Optionnel)</span></label>
+              <input type="text" id="mornChiefName" value="Maodo Ka" placeholder="Nom du chef de quartier..." class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-pastef-red focus:outline-none bg-slate-50">
+            </div>
           </div>
 
           <div class="p-3 bg-pastef-lightRed border border-pastef-red/30 rounded-2xl flex items-center justify-between font-bold text-pastef-darkRed">
@@ -328,12 +334,12 @@
 
   <!-- ================= PIED DE PAGE DISCRET ================= -->
   <footer class="text-center py-2 text-[10px] text-slate-400">
-    Cellule Pastef quartiers: S.M.SY 1/ D.S.2.E — Patriotes du Sénégal
+    Cellule Pastef quartiers : Serigne Mansour Sy 1 / Darou Salam 2 Extension — Patriotes du Sénégal
   </footer>
 
   <!-- ================= LOGIQUE SUPABASE ADAPTÉE ================= -->
   <script>
-    const CELL_NAME = "Cellule Pastef quartiers: S.M.SY 1/ D.S.2.E";
+    const CELL_NAME = "Cellule Pastef quartiers : Serigne Mansour Sy 1 / Darou Salam 2 Extension";
     const SUPABASE_URL = "https://vkjgroptpwdhxganhqiz.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_vzUPyqJzuYGCX_kGChptow_i4a8iWKJ";
 
@@ -421,12 +427,22 @@
     function setMornQuarter(q) {
       document.getElementById('selectedMornQuarter').value = q;
       ['smsy1', 'ds2e', 'smsy2', 'autre'].forEach(id => {
-        document.getElementById(`mq-${id}`).className = 'py-2.5 px-3 rounded-xl border border-slate-200 bg-slate-50 font-bold text-slate-700 text-center';
+        document.getElementById(`mq-${id}`).className = 'py-2.5 px-3 rounded-xl border border-slate-200 bg-slate-50 font-bold text-slate-700 text-center text-xs';
       });
-      if (q === 'S.M.SY 1') document.getElementById('mq-smsy1').className = 'py-2.5 px-3 rounded-xl border-2 border-pastef-red bg-pastef-lightRed font-bold text-pastef-red text-center';
-      if (q === 'D.S.2.E') document.getElementById('mq-ds2e').className = 'py-2.5 px-3 rounded-xl border-2 border-pastef-red bg-pastef-lightRed font-bold text-pastef-red text-center';
-      if (q === 'S.M.SY 2') document.getElementById('mq-smsy2').className = 'py-2.5 px-3 rounded-xl border-2 border-pastef-red bg-pastef-lightRed font-bold text-pastef-red text-center';
-      if (q === 'Autre quartier') document.getElementById('mq-autre').className = 'py-2.5 px-3 rounded-xl border-2 border-pastef-red bg-pastef-lightRed font-bold text-pastef-red text-center';
+      const chiefInput = document.getElementById('mornChiefName');
+      if (q === 'Serigne Mansour Sy 1') {
+        document.getElementById('mq-smsy1').className = 'py-2.5 px-3 rounded-xl border-2 border-pastef-red bg-pastef-lightRed font-bold text-pastef-red text-center text-xs';
+        if (chiefInput && !chiefInput.value) chiefInput.value = 'Maodo Ka';
+      }
+      if (q === 'Darou Salam 2 Extension') {
+        document.getElementById('mq-ds2e').className = 'py-2.5 px-3 rounded-xl border-2 border-pastef-red bg-pastef-lightRed font-bold text-pastef-red text-center text-xs';
+      }
+      if (q === 'Serigne Mansour Sy 2') {
+        document.getElementById('mq-smsy2').className = 'py-2.5 px-3 rounded-xl border-2 border-pastef-red bg-pastef-lightRed font-bold text-pastef-red text-center text-xs';
+      }
+      if (q === 'Autre quartier') {
+        document.getElementById('mq-autre').className = 'py-2.5 px-3 rounded-xl border-2 border-pastef-red bg-pastef-lightRed font-bold text-pastef-red text-center text-xs';
+      }
     }
 
     async function loadAllData() {
@@ -483,12 +499,16 @@
 
       // Répartition par quartier
       const statsNeighContainer = document.getElementById('statsNeighborhoodContainer');
-      if (statsNeighContainer) {
-        const quarters = ['S.M.SY 1', 'D.S.2.E', 'S.M.SY 2', 'Autre quartier'];
+        const quarters = [
+          'Serigne Mansour Sy 1',
+          'Darou Salam 2 Extension',
+          'Serigne Mansour Sy 2',
+          'Autre quartier'
+        ];
         statsNeighContainer.innerHTML = quarters.map(q => {
-          const mornCount = morningDonations.filter(d => d.neighborhood === q).length;
-          const eveServed = eveningBeneficiaries.filter(b => b.neighborhood === q && b.status === 'SERVI').length;
-          const eveTotal = eveningBeneficiaries.filter(b => b.neighborhood === q).length;
+          const mornCount = morningDonations.filter(d => (d.neighborhood || '').includes(q) || (q === 'Serigne Mansour Sy 1' && (d.neighborhood || '').includes('S.M.SY 1'))).length;
+          const eveServed = eveningBeneficiaries.filter(b => ((b.neighborhood || '').includes(q) || (q === 'Serigne Mansour Sy 1' && (b.neighborhood || '').includes('S.M.SY 1'))) && b.status === 'SERVI').length;
+          const eveTotal = eveningBeneficiaries.filter(b => (b.neighborhood || '').includes(q) || (q === 'Serigne Mansour Sy 1' && (b.neighborhood || '').includes('S.M.SY 1'))).length;
           return `
             <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
               <span class="font-bold text-slate-800">${q}</span>
@@ -523,20 +543,11 @@
     // Enregistrement don du matin
     async function handleMorningSubmit(e) {
       e.preventDefault();
-      if (stockState.is_closed) { alert('Journée clôturée !'); return; }
 
-      const name = document.getElementById('mornName').value.trim();
-      const phone = document.getElementById('mornPhone').value.trim();
-      const neighborhood = document.getElementById('selectedMornQuarter').value;
-
-      // Doublon
-      const cleanPhone = phone.replace(/\s+/g, '');
-      const dup = morningDonations.find(d => d.phone.replace(/\s+/g, '') === cleanPhone);
-      if (dup) {
-        if (!confirm(`Doublon détecté : ${dup.full_name} (${dup.phone}) a déjà été enregistré. Confirmer tout de même ?`)) {
-          return;
-        }
-      }
+      const name = document.getElementById('mornName').value.trim() || 'Donneur anonyme';
+      const phone = document.getElementById('mornPhone').value.trim() || 'Non renseigné';
+      const neighborhood = document.getElementById('selectedMornQuarter').value || 'Serigne Mansour Sy 1';
+      const chief = document.getElementById('mornChiefName')?.value.trim() || (neighborhood === 'Serigne Mansour Sy 1' ? 'Maodo Ka' : '');
 
       const btn = document.getElementById('mornSubmitBtn');
       btn.disabled = true;
@@ -545,7 +556,7 @@
       const { data, error } = await db.from('morning_donations').insert([{
         full_name: name,
         phone: phone,
-        neighborhood: neighborhood,
+        neighborhood: chief ? `${neighborhood} (Chef: ${chief})` : neighborhood,
         quantity: 2,
         agent: currentUser?.name || 'Agent'
       }]).select().single();
@@ -556,9 +567,9 @@
       if (error) { alert("Erreur: " + error.message); return; }
 
       await db.from('audit_logs').insert([{
-        user_name: currentUser?.name || 'Agent Matin',
+        user_name: currentUser?.name || 'Agent',
         action: 'REMISE_MATIN',
-        details: `Don de sang : 2 moustiquaires à ${name} (${phone})`
+        details: `Don de sang : 2 moustiquaires à ${name} (${phone}) - Quartier: ${neighborhood}`
       }]);
 
       document.getElementById('mornName').value = '';
@@ -634,15 +645,17 @@
       const toInsert = [];
       lines.forEach(l => {
         const p = l.split(',').map(x => x.trim());
-        if (p[0] && p[1]) {
+        if (p[0] || p[1]) {
+          const qName = p[2] || 'Serigne Mansour Sy 1';
+          const cName = p[3] || (qName === 'Serigne Mansour Sy 1' ? 'Maodo Ka' : 'Chef de quartier');
           toInsert.push({
-            full_name: p[0],
-            phone: p[1],
-            neighborhood: p[2] || 'S.M.SY 1',
-            origin_chief_or_list: p[3] || 'Chef de quartier',
+            full_name: p[0] || 'Bénéficiaire sans nom',
+            phone: p[1] || 'Non renseigné',
+            neighborhood: qName,
+            origin_chief_or_list: cName,
             status: 'EN_ATTENTE',
             quantity_given: 0,
-            created_by: currentUser?.name || 'Admin'
+            created_by: currentUser?.name || 'Agent'
           });
         }
       });

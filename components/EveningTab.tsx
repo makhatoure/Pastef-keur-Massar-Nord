@@ -13,7 +13,18 @@ interface EveningTabProps {
   onRefresh: () => void;
 }
 
-const PRESET_NEIGHBORHOODS = ['S.M.SY 1', 'D.S.2.E', 'S.M.SY 2', 'Autre quartier'];
+const PRESET_NEIGHBORHOODS = [
+  'Serigne Mansour Sy 1',
+  'Darou Salam 2 Extension',
+  'Serigne Mansour Sy 2',
+  'Autre quartier',
+];
+
+export const EVENING_CHIEFS: Record<string, string> = {
+  'Serigne Mansour Sy 1': 'Maodo Ka',
+  'Darou Salam 2 Extension': '',
+  'Serigne Mansour Sy 2': '',
+};
 
 export default function EveningTab({
   beneficiaries,
@@ -28,14 +39,14 @@ export default function EveningTab({
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'EN_ATTENTE' | 'SERVI'>('ALL');
   const [neighborhoodFilter, setNeighborhoodFilter] = useState('ALL');
 
-  // Saisie / Préparation des listes (Admin)
+  // Saisie / Préparation des listes
   const [showAddModal, setShowAddModal] = useState(false);
   const [isBulkMode, setIsBulkMode] = useState(false);
   const [bulkText, setBulkText] = useState('');
   const [singleName, setSingleName] = useState('');
   const [singlePhone, setSinglePhone] = useState('');
-  const [singleNeighborhood, setSingleNeighborhood] = useState('S.M.SY 1');
-  const [singleChief, setSingleChief] = useState('');
+  const [singleNeighborhood, setSingleNeighborhood] = useState('Serigne Mansour Sy 1');
+  const [singleChief, setSingleChief] = useState('Maodo Ka');
 
   // Modale de service au podium
   const [servingBeneficiary, setServingBeneficiary] = useState<EveningBeneficiary | null>(null);
@@ -128,18 +139,18 @@ export default function EveningTab({
         const beneficiariesList = lines.map(line => {
           const parts = line.split(',').map(p => p.trim());
           return {
-            fullName: parts[0] || '',
-            phone: parts[1] || '',
-            neighborhood: parts[2] || 'S.M.SY 1',
+            fullName: parts[0] || 'Bénéficiaire sans nom',
+            phone: parts[1] || 'Non renseigné',
+            neighborhood: parts[2] || 'Serigne Mansour Sy 1',
             originChiefOrList: parts[3] || 'Liste Chef de quartier',
           };
         });
         payload.beneficiaries = beneficiariesList;
       } else {
         payload.single = {
-          fullName: singleName.trim(),
-          phone: singlePhone.trim(),
-          neighborhood: singleNeighborhood.trim(),
+          fullName: singleName.trim() || 'Bénéficiaire sans nom',
+          phone: singlePhone.trim() || 'Non renseigné',
+          neighborhood: singleNeighborhood.trim() || 'Serigne Mansour Sy 1',
           originChiefOrList: singleChief.trim() || 'Liste Chef de quartier',
         };
       }

@@ -13,7 +13,7 @@ interface NavbarProps {
   setActiveTab: (tab: string) => void;
 }
 
-export const OFFICIAL_CELL_NAME = 'Cellule Pastef quartiers: S.M.SY 1/ D.S.2.E';
+export const OFFICIAL_CELL_NAME = 'Cellule Pastef quartiers : Serigne Mansour Sy 1 / Darou Salam 2 Extension';
 
 export default function Navbar({
   currentUser,

@@ -12,7 +12,18 @@ interface MorningTabProps {
   onRefresh: () => void;
 }
 
-const PRESET_NEIGHBORHOODS = ['S.M.SY 1', 'D.S.2.E', 'S.M.SY 2', 'Autre quartier'];
+const PRESET_NEIGHBORHOODS = [
+  'Serigne Mansour Sy 1',
+  'Darou Salam 2 Extension',
+  'Serigne Mansour Sy 2',
+  'Autre quartier',
+];
+
+export const NEIGHBORHOOD_CHIEFS: Record<string, string> = {
+  'Serigne Mansour Sy 1': 'Maodo Ka',
+  'Darou Salam 2 Extension': '',
+  'Serigne Mansour Sy 2': '',
+};
 
 export default function MorningTab({
   donations,
@@ -24,8 +35,9 @@ export default function MorningTab({
   // Formulaire de saisie
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
-  const [neighborhood, setNeighborhood] = useState('S.M.SY 1');
+  const [neighborhood, setNeighborhood] = useState('Serigne Mansour Sy 1');
   const [customNeighborhood, setCustomNeighborhood] = useState('');
+  const [chiefName, setChiefName] = useState(NEIGHBORHOOD_CHIEFS['Serigne Mansour Sy 1'] || '');
   
   // États de l'interface
   const [loading, setLoading] = useState(false);
@@ -34,11 +46,12 @@ export default function MorningTab({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Modale de confirmation de remise (Étape obligatoire)
+  // Modale de confirmation de remise
   const [confirmModalData, setConfirmModalData] = useState<{
     fullName: string;
     phone: string;
     neighborhood: string;
+    chiefName?: string;
     forceDuplicate?: boolean;
   } | null>(null);
 
@@ -46,34 +59,27 @@ export default function MorningTab({
   const [editingItem, setEditingItem] = useState<MorningDonation | null>(null);
   const [editReason, setEditReason] = useState('');
 
-  const targetNeighborhood = neighborhood === 'Autre quartier' ? customNeighborhood.trim() : neighborhood;
+  const targetNeighborhood = neighborhood === 'Autre quartier' ? (customNeighborhood.trim() || 'Autre quartier') : neighborhood;
 
-  // Pré-validation du formulaire avant ouverture de la modale de confirmation
+  const handleSelectNeighborhood = (q: string) => {
+    setNeighborhood(q);
+    if (NEIGHBORHOOD_CHIEFS[q] !== undefined) {
+      setChiefName(NEIGHBORHOOD_CHIEFS[q]);
+    }
+  };
+
+  // Pré-validation du formulaire : AUCUN CHAMP N'EST BLOQUANT
   const handlePreSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
     setSuccessMsg(null);
 
-    if (isClosed) {
-      setErrorMsg('La journée est clôturée. Enregistrement impossible.');
-      return;
-    }
-
-    if (!fullName.trim() || !phone.trim() || !targetNeighborhood) {
-      setErrorMsg('Tous les champs (Nom, Téléphone, Quartier) sont strictement obligatoires.');
-      return;
-    }
-
-    if (remainingStock < 2) {
-      setErrorMsg(`Stock insuffisant (${remainingStock} disponible). Impossible de remettre 2 moustiquaires.`);
-      return;
-    }
-
-    // Ouvrir la modale de confirmation
+    // Ouvrir la modale de confirmation avec des valeurs par défaut si vide
     setConfirmModalData({
-      fullName: fullName.trim(),
-      phone: phone.trim(),
+      fullName: fullName.trim() || 'Donneur anonyme',
+      phone: phone.trim() || 'Non renseigné',
       neighborhood: targetNeighborhood,
+      chiefName: chiefName.trim(),
     });
   };
 
@@ -218,37 +224,35 @@ export default function MorningTab({
         <form onSubmit={handlePreSubmit} className="space-y-3">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Nom et Prénom du Donneur <span className="text-rose-500">*</span>
+              Nom et Prénom du Donneur <span className="text-slate-400 font-normal">(Optionnel)</span>
             </label>
             <input
               type="text"
-              required
               disabled={isClosed}
               value={fullName}
               onChange={e => setFullName(e.target.value)}
-              placeholder="ex: Amadou Diallo"
+              placeholder="ex: Amadou Diallo (ou laisser vide)"
               className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-600 focus:outline-none disabled:bg-slate-100"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Numéro de Téléphone <span className="text-rose-500">*</span>
+              Numéro de Téléphone <span className="text-slate-400 font-normal">(Optionnel)</span>
             </label>
             <input
               type="tel"
-              required
               disabled={isClosed}
               value={phone}
               onChange={e => setPhone(e.target.value)}
-              placeholder="ex: 77 123 45 67"
+              placeholder="ex: 77 123 45 67 (ou laisser vide)"
               className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-600 focus:outline-none disabled:bg-slate-100"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Quartier de résidence <span className="text-rose-500">*</span>
+              Quartier de résidence
             </label>
             <div className="grid grid-cols-2 gap-1.5 mb-2">
               {PRESET_NEIGHBORHOODS.map(q => (
@@ -256,8 +260,8 @@ export default function MorningTab({
                   type="button"
                   key={q}
                   disabled={isClosed}
-                  onClick={() => setNeighborhood(q)}
-                  className={`py-1.5 px-2 rounded-lg text-xs font-medium border text-center transition ${
+                  onClick={() => handleSelectNeighborhood(q)}
+                  className={`py-2 px-2 rounded-lg text-xs font-medium border text-center transition ${
                     neighborhood === q
                       ? 'border-teal-700 bg-teal-50 text-teal-900 font-bold'
                       : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
@@ -271,14 +275,28 @@ export default function MorningTab({
             {neighborhood === 'Autre quartier' && (
               <input
                 type="text"
-                required
                 disabled={isClosed}
                 value={customNeighborhood}
                 onChange={e => setCustomNeighborhood(e.target.value)}
                 placeholder="Préciser le quartier..."
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-600 focus:outline-none"
+                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-600 focus:outline-none mb-2"
               />
             )}
+
+            {/* Champ Chef de quartier modifiable */}
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-600 mb-1">
+                Chef de Quartier <span className="text-slate-400 font-normal">(Optionnel)</span>
+              </label>
+              <input
+                type="text"
+                disabled={isClosed}
+                value={chiefName}
+                onChange={e => setChiefName(e.target.value)}
+                placeholder="ex: Maodo Ka ou laisser vide"
+                className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:outline-none bg-slate-50"
+              />
+            </div>
           </div>
 
           <div className="p-2.5 bg-teal-50 rounded-xl border border-teal-200 flex items-center justify-between text-xs">
@@ -290,8 +308,7 @@ export default function MorningTab({
 
           <button
             type="submit"
-            disabled={isClosed || remainingStock < 2}
-            className="w-full py-3 px-4 bg-teal-700 hover:bg-teal-800 active:scale-[0.99] text-white font-bold rounded-xl shadow-md transition disabled:opacity-50 text-sm flex items-center justify-center gap-2"
+            className="w-full py-3 px-4 bg-teal-700 hover:bg-teal-800 active:scale-[0.99] text-white font-bold rounded-xl shadow-md transition text-sm flex items-center justify-center gap-2"
           >
             <CheckCircle2 className="w-5 h-5" />
             <span>Valider la Remise (2 moustiquaires)</span>

@@ -13,13 +13,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: 'La journée a été clôturée. Les enregistrements sont verrouillés.' }, { status: 403 });
     }
 
-    if (!fullName?.trim() || !phone?.trim() || !neighborhood?.trim()) {
-      return NextResponse.json({ success: false, message: 'Le nom, le téléphone et le quartier sont obligatoires.' }, { status: 400 });
-    }
-
-    if (state && state.stock.remaining < 2) {
-      return NextResponse.json({ success: false, message: `Stock insuffisant (${state.stock.remaining} disponible).` }, { status: 400 });
-    }
+    const safeName = fullName?.trim() || 'Donneur anonyme';
+    const safePhone = phone?.trim() || 'Non renseigné';
+    const safeNeighborhood = neighborhood?.trim() || 'Non spécifié';
 
     const cleanPhone = phone.trim().replace(/\s+/g, '');
 
@@ -43,11 +39,11 @@ export async function POST(request: Request) {
     const { data: inserted, error } = await supabase
       .from('morning_donations')
       .insert([{
-        full_name: fullName.trim(),
-        phone: phone.trim(),
-        neighborhood: neighborhood.trim(),
+        full_name: safeName,
+        phone: safePhone,
+        neighborhood: safeNeighborhood,
         quantity: 2,
-        agent: agentName || 'Agent Matin',
+        agent: agentName || 'Agent',
         confirmed: true,
       }])
       .select()

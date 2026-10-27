@@ -15,13 +15,13 @@ export async function POST(request: Request) {
     }
 
     const records = itemsToAdd.map((it: any) => ({
-      full_name: it.fullName.trim(),
-      phone: it.phone.trim(),
-      neighborhood: it.neighborhood.trim(),
-      origin_chief_or_list: it.originChiefOrList?.trim() || 'Liste chef de quartier',
+      full_name: it.fullName ? it.fullName.trim() : 'Bénéficiaire sans nom',
+      phone: it.phone ? it.phone.trim() : 'Non renseigné',
+      neighborhood: it.neighborhood ? it.neighborhood.trim() : 'Serigne Mansour Sy 1',
+      origin_chief_or_list: it.originChiefOrList ? it.originChiefOrList.trim() : (it.chiefName ? `Chef: ${it.chiefName.trim()}` : 'Liste chef de quartier'),
       status: 'EN_ATTENTE',
       quantity_given: 0,
-      created_by: adminName || 'Administrateur',
+      created_by: adminName || 'Agent',
       is_exceptional_add: Boolean(it.isExceptionalAdd),
     }));
 
