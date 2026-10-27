@@ -45,19 +45,21 @@ export default function Navbar({
 
         {/* Badges d'état et utilisateur */}
         <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
-          {/* Badge Stock restant */}
-          <div
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${
-              remainingStock > 20
-                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                : remainingStock > 0
-                ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                : 'bg-rose-50 text-rose-800 border border-rose-200 animate-pulse'
-            }`}
-          >
-            <Package className="w-3.5 h-3.5" />
-            <span>Stock: {remainingStock}</span>
-          </div>
+          {/* Badge Stock restant UNIQUEMENT pour l'Admin */}
+          {currentUser?.role === 'ADMIN' && (
+            <div
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${
+                remainingStock > 20
+                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                  : remainingStock > 0
+                  ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                  : 'bg-rose-50 text-rose-800 border border-rose-200 animate-pulse'
+              }`}
+            >
+              <Package className="w-3.5 h-3.5" />
+              <span>Stock: {remainingStock}</span>
+            </div>
+          )}
 
           {/* Badge Clôture si actif */}
           {isClosed && (
@@ -95,16 +97,20 @@ export default function Navbar({
       {/* Navigation par onglets (Desktop et tablettes) */}
       <div className="hidden md:flex border-t border-slate-100 bg-slate-50 px-4">
         <nav className="flex space-x-2 py-1 max-w-7xl mx-auto w-full">
-          {[
-            { id: 'dashboard', label: 'Tableau de bord', icon: '📊' },
-            { id: 'morning', label: 'Don de Sang (Matin)', icon: '🩸' },
-            { id: 'evening', label: 'Podium (Soir)', icon: '🎪' },
-            { id: 'stock', label: 'Gestion du Stock', icon: '📦' },
-            { id: 'reports', label: 'Rapports & Clôture', icon: '📑' },
-            ...(currentUser?.role === 'ADMIN'
-              ? [{ id: 'admin', label: 'Administration & Audit', icon: '🛡️' }]
-              : []),
-          ].map(tab => (
+          {(currentUser?.role === 'ADMIN'
+            ? [
+                { id: 'dashboard', label: 'Bilan & Stock', icon: '📊' },
+                { id: 'morning', label: 'Don de Sang (Matin)', icon: '🩸' },
+                { id: 'evening', label: 'Podium (Soir)', icon: '🎪' },
+                { id: 'stock', label: 'Gestion du Stock', icon: '📦' },
+                { id: 'reports', label: 'Rapports & Clôture', icon: '📑' },
+                { id: 'admin', label: 'Administration', icon: '🛡️' },
+              ]
+            : [
+                { id: 'morning', label: 'Don de Sang (Matin)', icon: '🩸' },
+                { id: 'evening', label: 'Distribution Podium (Soir)', icon: '🎪' },
+              ]
+          ).map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}

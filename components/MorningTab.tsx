@@ -91,7 +91,7 @@ export default function MorningTab({
           fullName: confirmModalData.fullName,
           phone: confirmModalData.phone,
           neighborhood: confirmModalData.neighborhood,
-          agentName: currentUser?.name || 'Agent Matin',
+          agentName: currentUser?.name || 'Agent',
           forceDuplicate,
         }),
       });

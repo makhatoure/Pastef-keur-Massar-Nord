@@ -15,14 +15,18 @@ export default function MobileBottomNav({
   setActiveTab,
   currentUser,
 }: MobileBottomNavProps) {
-  const tabs = [
-    { id: 'dashboard', label: 'Bilan', icon: BarChart3 },
-    { id: 'morning', label: 'Matin (Sang)', icon: HeartHandshake },
-    { id: 'evening', label: 'Soir (Podium)', icon: Users },
-    { id: 'stock', label: 'Stock', icon: Boxes },
-    { id: 'reports', label: 'Rapports', icon: FileSpreadsheet },
-    ...(currentUser?.role === 'ADMIN' ? [{ id: 'admin', label: 'Admin', icon: Settings }] : []),
-  ];
+  const tabs = currentUser?.role === 'ADMIN'
+    ? [
+        { id: 'dashboard', label: 'Bilan', icon: BarChart3 },
+        { id: 'morning', label: 'Matin (Sang)', icon: HeartHandshake },
+        { id: 'evening', label: 'Soir (Podium)', icon: Users },
+        { id: 'stock', label: 'Stock', icon: Boxes },
+        { id: 'reports', label: 'Rapports', icon: FileSpreadsheet },
+      ]
+    : [
+        { id: 'morning', label: 'Matin (Don de Sang)', icon: HeartHandshake },
+        { id: 'evening', label: 'Soir (Podium)', icon: Users },
+      ];
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-lg px-1 py-1 safe-bottom">

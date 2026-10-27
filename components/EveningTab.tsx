@@ -531,7 +531,10 @@ export default function EveningTab({
                   className="w-20 px-3 py-1.5 text-center font-bold text-base border border-blue-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
                 />
                 <span className="text-xs text-blue-800">
-                  moustiquaire(s) (Stock dispo: <strong>{remainingStock}</strong>)
+                  moustiquaire(s)
+                  {currentUser?.role === 'ADMIN' && (
+                    <> (Stock dispo: <strong>{remainingStock}</strong>)</>
+                  )}
                 </span>
               </div>
             </div>

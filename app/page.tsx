@@ -41,7 +41,9 @@ export default function Home() {
     try {
       const saved = localStorage.getItem('pastef_user_session');
       if (saved) {
-        setCurrentUser(JSON.parse(saved));
+        const u = JSON.parse(saved);
+        setCurrentUser(u);
+        setActiveTab(u.role === 'ADMIN' ? 'dashboard' : 'morning');
       }
     } catch (e) {
       console.error(e);
@@ -71,13 +73,13 @@ export default function Home() {
 
   useEffect(() => {
     fetchData();
-    // Rafraîchissement automatique toutes les 15 secondes pour synchroniser les téléphones
     const interval = setInterval(fetchData, 15000);
     return () => clearInterval(interval);
   }, [fetchData]);
 
   const handleLoginSuccess = (user: User) => {
     setCurrentUser(user);
+    setActiveTab(user.role === 'ADMIN' ? 'dashboard' : 'morning');
     try {
       localStorage.setItem('pastef_user_session', JSON.stringify(user));
     } catch (e) {
@@ -119,7 +121,7 @@ export default function Home() {
           </div>
         ) : (
           <>
-            {activeTab === 'dashboard' && (
+            {activeTab === 'dashboard' && currentUser.role === 'ADMIN' && (
               <DashboardTab
                 stats={stats}
                 stock={stock}
@@ -148,7 +150,7 @@ export default function Home() {
               />
             )}
 
-            {activeTab === 'stock' && (
+            {activeTab === 'stock' && currentUser.role === 'ADMIN' && (
               <StockTab
                 stock={stock}
                 defaultEveningQty={defaultEveningQty}
@@ -157,7 +159,7 @@ export default function Home() {
               />
             )}
 
-            {activeTab === 'reports' && (
+            {activeTab === 'reports' && currentUser.role === 'ADMIN' && (
               <ReportsTab
                 stats={stats}
                 stock={stock}
