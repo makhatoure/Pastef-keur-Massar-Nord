@@ -99,17 +99,17 @@ export default function Navbar({
         <nav className="flex space-x-2 py-1 max-w-7xl mx-auto w-full">
           {(currentUser?.role === 'ADMIN'
             ? [
-                { id: 'dashboard', label: 'Bilan & Stock', icon: '📊' },
                 { id: 'morning', label: 'Don de Sang (Matin)', icon: '🩸' },
                 { id: 'evening', label: 'Podium (Soir)', icon: '🎪' },
                 { id: 'stock', label: 'Gestion du Stock', icon: '📦' },
                 { id: 'reports', label: 'Rapports & Clôture', icon: '📑' },
+                { id: 'dashboard', label: 'Bilan & Stock', icon: '📊' },
                 { id: 'admin', label: 'Administration', icon: '🛡️' },
               ]
             : [
-                { id: 'dashboard', label: 'Bilan & Statistiques', icon: '📊' },
                 { id: 'morning', label: 'Don de Sang (Matin)', icon: '🩸' },
                 { id: 'evening', label: 'Distribution Podium (Soir)', icon: '🎪' },
+                { id: 'dashboard', label: 'Bilan & Statistiques', icon: '📊' },
               ]
           ).map(tab => (
             <button

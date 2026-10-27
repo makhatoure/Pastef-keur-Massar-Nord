@@ -17,16 +17,16 @@ export default function MobileBottomNav({
 }: MobileBottomNavProps) {
   const tabs = currentUser?.role === 'ADMIN'
     ? [
-        { id: 'dashboard', label: 'Bilan', icon: BarChart3 },
         { id: 'morning', label: 'Matin (Sang)', icon: HeartHandshake },
         { id: 'evening', label: 'Soir (Podium)', icon: Users },
         { id: 'stock', label: 'Stock', icon: Boxes },
         { id: 'reports', label: 'Rapports', icon: FileSpreadsheet },
+        { id: 'dashboard', label: 'Bilan', icon: BarChart3 },
       ]
     : [
-        { id: 'dashboard', label: 'Bilan', icon: BarChart3 },
         { id: 'morning', label: 'Matin (Sang)', icon: HeartHandshake },
         { id: 'evening', label: 'Soir (Podium)', icon: Users },
+        { id: 'dashboard', label: 'Bilan', icon: BarChart3 },
       ];
 
   return (
