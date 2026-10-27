@@ -180,19 +180,6 @@ export default function MorningTab({
 
   return (
     <div className="space-y-4 pb-16">
-      {/* En-tête du module */}
-      <div className="bg-teal-700 text-white p-4 rounded-2xl shadow-sm">
-        <div className="flex items-center gap-2">
-          <HeartHandshake className="w-6 h-6 flex-shrink-0" />
-          <div>
-            <h2 className="text-base sm:text-lg font-bold">Module du Matin — Don de Sang</h2>
-            <p className="text-xs text-teal-100">
-              Ration fixe : <strong>2 moustiquaires</strong> par donneur après confirmation.
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* Messages d'alerte / succès */}
       {errorMsg && (
         <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs flex items-center justify-between gap-2 shadow-xs">
@@ -215,45 +202,46 @@ export default function MorningTab({
       )}
 
       {/* Formulaire de saisie rapide adapté téléphone */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
-        <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-          <UserPlus className="w-4 h-4 text-teal-700" />
-          Enregistrer un Donneur & Remise de 2 Moustiquaires
-        </h3>
+      <div className="bg-white rounded-2xl border border-slate-200 border-t-4 border-t-teal-700 p-4 shadow-sm">
+        <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-100">
+          <HeartHandshake className="w-5 h-5 text-teal-700 flex-shrink-0" />
+          <div>
+            <h2 className="text-sm font-bold text-slate-800">Don de Sang — Matin</h2>
+            <p className="text-[11px] text-slate-400">2 moustiquaires remises par donneur</p>
+          </div>
+        </div>
 
-        <form onSubmit={handlePreSubmit} className="space-y-3">
+        <form onSubmit={handlePreSubmit} className="space-y-2.5">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Nom et Prénom du Donneur <span className="text-slate-400 font-normal">(Optionnel)</span>
+              Nom et Prénom <span className="text-slate-400 font-normal">· optionnel</span>
             </label>
             <input
               type="text"
               disabled={isClosed}
               value={fullName}
               onChange={e => setFullName(e.target.value)}
-              placeholder="ex: Amadou Diallo (ou laisser vide)"
+              placeholder="ex: Amadou Diallo"
               className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-600 focus:outline-none disabled:bg-slate-100"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Numéro de Téléphone <span className="text-slate-400 font-normal">(Optionnel)</span>
+              Téléphone <span className="text-slate-400 font-normal">· optionnel</span>
             </label>
             <input
               type="tel"
               disabled={isClosed}
               value={phone}
               onChange={e => setPhone(e.target.value)}
-              placeholder="ex: 77 123 45 67 (ou laisser vide)"
+              placeholder="ex: 77 123 45 67"
               className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-600 focus:outline-none disabled:bg-slate-100"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Quartier de résidence
-            </label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Quartier</label>
             <div className="grid grid-cols-2 gap-1.5 mb-2">
               {PRESET_NEIGHBORHOODS.map(q => (
                 <button
@@ -283,27 +271,19 @@ export default function MorningTab({
               />
             )}
 
-            {/* Champ Chef de quartier modifiable */}
             <div>
               <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                Chef de Quartier <span className="text-slate-400 font-normal">(Optionnel)</span>
+                Chef de Quartier <span className="text-slate-400 font-normal">· optionnel</span>
               </label>
               <input
                 type="text"
                 disabled={isClosed}
                 value={chiefName}
                 onChange={e => setChiefName(e.target.value)}
-                placeholder="ex: Maodo Ka ou laisser vide"
+                placeholder="ex: Maodo Ka"
                 className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-600 focus:outline-none bg-slate-50"
               />
             </div>
-          </div>
-
-          <div className="p-2.5 bg-teal-50 rounded-xl border border-teal-200 flex items-center justify-between text-xs">
-            <span className="font-semibold text-teal-900">Quantité à remettre :</span>
-            <span className="font-black text-teal-800 bg-white px-2 py-0.5 rounded-md border border-teal-200">
-              2 Moustiquaires
-            </span>
           </div>
 
           <button
@@ -311,7 +291,7 @@ export default function MorningTab({
             className="w-full py-3 px-4 bg-teal-700 hover:bg-teal-800 active:scale-[0.99] text-white font-bold rounded-xl shadow-md transition text-sm flex items-center justify-center gap-2"
           >
             <CheckCircle2 className="w-5 h-5" />
-            <span>Valider la Remise (2 moustiquaires)</span>
+            <span>✓ Enregistrer le Don</span>
           </button>
         </form>
       </div>

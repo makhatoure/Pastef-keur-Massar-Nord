@@ -143,60 +143,53 @@
     <div id="circuit-morning" class="space-y-4">
       
       <!-- Carte formulaire direct -->
-      <div class="bg-white rounded-3xl border border-slate-200 p-5 shadow-xs space-y-4 border-t-4 border-t-pastef-red">
-        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+      <div class="bg-white rounded-3xl border border-slate-200 p-4 shadow-xs space-y-3 border-t-4 border-t-pastef-red">
+        <div class="flex items-center gap-2 pb-2 border-b border-slate-100">
+          <span class="text-xl">🩸</span>
           <div>
-            <h2 class="text-sm font-black text-slate-900 uppercase">Enregistrement Don de Sang</h2>
-            <p class="text-xs text-slate-500">Ration fixe obligatoire : <strong>2 moustiquaires</strong></p>
+            <h2 class="text-sm font-black text-slate-900">Don de Sang — Matin</h2>
+            <p class="text-[11px] text-slate-400">2 moustiquaires remises par donneur</p>
           </div>
-          <span class="text-2xl">🩸</span>
         </div>
 
-        <form onsubmit="handleMorningSubmit(event)" class="space-y-3.5 text-xs">
+        <form onsubmit="handleMorningSubmit(event)" class="space-y-2.5 text-xs">
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Nom et Prénom du Donneur <span class="text-slate-400 font-normal">(Optionnel)</span></label>
-            <input type="text" id="mornName" placeholder="ex: Amadou Diallo (ou laisser vide)" class="w-full px-3.5 py-3 border border-slate-300 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-pastef-red focus:outline-none">
+            <label class="block font-bold text-slate-700 mb-1">Nom et Prénom <span class="text-slate-400 font-normal">· optionnel</span></label>
+            <input type="text" id="mornName" placeholder="ex: Amadou Diallo" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-pastef-red focus:outline-none">
           </div>
 
           <div>
-            <label class="block font-bold text-slate-700 mb-1">Numéro de Téléphone <span class="text-slate-400 font-normal">(Optionnel)</span></label>
-            <input type="tel" id="mornPhone" placeholder="ex: 77 123 45 67 (ou laisser vide)" class="w-full px-3.5 py-3 border border-slate-300 rounded-2xl text-sm font-mono font-medium focus:ring-2 focus:ring-pastef-red focus:outline-none">
+            <label class="block font-bold text-slate-700 mb-1">Téléphone <span class="text-slate-400 font-normal">· optionnel</span></label>
+            <input type="tel" id="mornPhone" placeholder="ex: 77 123 45 67" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-sm font-mono font-medium focus:ring-2 focus:ring-pastef-red focus:outline-none">
           </div>
 
           <div>
             <label class="block font-bold text-slate-700 mb-1">Quartier</label>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
-              <button type="button" onclick="setMornQuarter('Serigne Mansour Sy 1')" id="mq-smsy1" class="py-2.5 px-3 rounded-xl border-2 border-pastef-red bg-pastef-lightRed font-bold text-pastef-red text-center text-xs">
+            <div class="grid grid-cols-2 gap-1.5 mb-2">
+              <button type="button" onclick="setMornQuarter('Serigne Mansour Sy 1')" id="mq-smsy1" class="py-2 px-2 rounded-xl border-2 border-pastef-red bg-pastef-lightRed font-bold text-pastef-red text-center text-xs">
                 Serigne Mansour Sy 1
               </button>
-              <button type="button" onclick="setMornQuarter('Darou Salam 2 Extension')" id="mq-ds2e" class="py-2.5 px-3 rounded-xl border border-slate-200 bg-slate-50 font-bold text-slate-700 text-center text-xs">
+              <button type="button" onclick="setMornQuarter('Darou Salam 2 Extension')" id="mq-ds2e" class="py-2 px-2 rounded-xl border border-slate-200 bg-slate-50 font-bold text-slate-700 text-center text-xs">
                 Darou Salam 2 Extension
               </button>
-              <button type="button" onclick="setMornQuarter('Serigne Mansour Sy 2')" id="mq-smsy2" class="py-2.5 px-3 rounded-xl border border-slate-200 bg-slate-50 font-bold text-slate-700 text-center text-xs">
+              <button type="button" onclick="setMornQuarter('Serigne Mansour Sy 2')" id="mq-smsy2" class="py-2 px-2 rounded-xl border border-slate-200 bg-slate-50 font-bold text-slate-700 text-center text-xs">
                 Serigne Mansour Sy 2
               </button>
-              <button type="button" onclick="setMornQuarter('Autre quartier')" id="mq-autre" class="py-2.5 px-3 rounded-xl border border-slate-200 bg-slate-50 font-bold text-slate-700 text-center text-xs">
+              <button type="button" onclick="setMornQuarter('Autre quartier')" id="mq-autre" class="py-2 px-2 rounded-xl border border-slate-200 bg-slate-50 font-bold text-slate-700 text-center text-xs">
                 Autre quartier
               </button>
             </div>
             <input type="hidden" id="selectedMornQuarter" value="Serigne Mansour Sy 1">
 
             <!-- Nom du chef de quartier modifiable -->
-            <div class="mt-2">
-              <label class="block text-[11px] font-bold text-slate-600 mb-1">Chef de quartier / Liste : <span class="text-slate-400 font-normal">(Optionnel)</span></label>
-              <input type="text" id="mornChiefName" value="Maodo Ka" placeholder="Nom du chef de quartier..." class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-pastef-red focus:outline-none bg-slate-50">
+            <div class="mt-1.5">
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Chef de quartier <span class="text-slate-400 font-normal">· optionnel</span></label>
+              <input type="text" id="mornChiefName" value="Maodo Ka" placeholder="Nom du chef de quartier..." class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-pastef-red focus:outline-none bg-slate-50">
             </div>
           </div>
 
-          <div class="p-3 bg-pastef-lightRed border border-pastef-red/30 rounded-2xl flex items-center justify-between font-bold text-pastef-darkRed">
-            <span>Ration remise au donneur :</span>
-            <span class="bg-white px-3 py-1 rounded-xl border border-pastef-red text-pastef-red font-black text-sm shadow-2xs">
-              2 Moustiquaires
-            </span>
-          </div>
-
-          <button type="submit" id="mornSubmitBtn" class="w-full py-4 bg-pastef-red hover:bg-pastef-darkRed active:scale-98 text-white font-black rounded-2xl text-base shadow-md transition flex items-center justify-center gap-2">
-            <span>✓ Confirmer Remise (2 moustiquaires)</span>
+          <button type="submit" id="mornSubmitBtn" class="w-full py-3 bg-pastef-red hover:bg-pastef-darkRed active:scale-98 text-white font-black rounded-2xl text-sm shadow-md transition flex items-center justify-center gap-2">
+            <span>✓ Enregistrer le Don</span>
           </button>
         </form>
       </div>
