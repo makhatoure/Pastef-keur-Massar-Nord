@@ -10,11 +10,12 @@ const config: Config = {
     extend: {
       colors: {
         pastef: {
-          green: "#0B6623",
-          darkGreen: "#064016",
-          lightGreen: "#E8F5E9",
+          green: "#006837",
+          darkGreen: "#004d25",
+          lightGreen: "#e6f4ea",
           red: "#C1272D",
-          gold: "#D4AF37",
+          darkRed: "#9e1b20",
+          lightRed: "#fde8e9",
         },
       },
     },
