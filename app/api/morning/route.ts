@@ -17,22 +17,24 @@ export async function POST(request: Request) {
     const safePhone = phone?.trim() || 'Non renseigné';
     const safeNeighborhood = neighborhood?.trim() || 'Non spécifié';
 
-    const cleanPhone = phone.trim().replace(/\s+/g, '');
+    const cleanPhone = (phone || '').trim().replace(/\s+/g, '');
 
-    // Vérification de doublon dans Supabase
-    const { data: existing } = await supabase
-      .from('morning_donations')
-      .select('*')
-      .ilike('phone', `%${cleanPhone}%`)
-      .limit(1);
+    // Vérification de doublon dans Supabase uniquement si un téléphone est renseigné
+    if (cleanPhone.length >= 6 && !forceDuplicate) {
+      const { data: existing } = await supabase
+        .from('morning_donations')
+        .select('*')
+        .ilike('phone', `%${cleanPhone}%`)
+        .limit(1);
 
-    if (existing && existing.length > 0 && !forceDuplicate) {
-      const d = existing[0];
-      return NextResponse.json({
-        success: false,
-        isDuplicateWarning: true,
-        message: `Doublon détecté : ${d.full_name} (${d.phone}) a déjà été enregistré à ${new Date(d.created_at).toLocaleTimeString('fr-FR')}.`,
-      }, { status: 409 });
+      if (existing && existing.length > 0) {
+        const d = existing[0];
+        return NextResponse.json({
+          success: false,
+          isDuplicateWarning: true,
+          message: `Doublon détecté : ${d.full_name} (${d.phone}) a déjà été enregistré à ${new Date(d.created_at).toLocaleTimeString('fr-FR')}.`,
+        }, { status: 409 });
+      }
     }
 
     // Insertion Supabase
@@ -57,7 +59,7 @@ export async function POST(request: Request) {
     await supabase.from('audit_logs').insert([{
       user_name: agentName || 'Agent Matin',
       action: 'REMISE_MATIN',
-      details: `Remise de 2 moustiquaires à ${fullName.trim()} (${phone.trim()}, Quartier: ${neighborhood.trim()})`,
+      details: `Remise de 2 moustiquaires à ${safeName} (${safePhone}, Quartier: ${safeNeighborhood})`,
     }]);
 
     return NextResponse.json({

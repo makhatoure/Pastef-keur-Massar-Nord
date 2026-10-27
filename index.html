@@ -488,10 +488,14 @@
       const calc = calculate();
       
       // Mise à jour stock admin
-      document.getElementById('headerStockVal').innerText = calc.remaining;
-      document.getElementById('admInitStock').innerText = calc.initial;
-      document.getElementById('admTotalOut').innerText = calc.totalOut;
-      document.getElementById('admRemainingStock').innerText = calc.remaining;
+      const elHeaderStock = document.getElementById('headerStockVal');
+      if (elHeaderStock) elHeaderStock.innerText = calc.remaining;
+      const elAdmInit = document.getElementById('admInitStock');
+      if (elAdmInit) elAdmInit.innerText = calc.initial;
+      const elAdmTotal = document.getElementById('admTotalOut');
+      if (elAdmTotal) elAdmTotal.innerText = calc.totalOut;
+      const elAdmRem = document.getElementById('admRemainingStock');
+      if (elAdmRem) elAdmRem.innerText = calc.remaining;
 
       // Mise à jour Statistiques générales (accessibles à tous, sans stock)
       const statMorn = document.getElementById('statMornTotal');
@@ -528,19 +532,22 @@
       }
 
       // Derniers dons matin
-      const recentMorn = morningDonations.slice(0, 10);
-      document.getElementById('morningItemsContainer').innerHTML = recentMorn.length ? recentMorn.map(d => `
-        <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl flex justify-between items-center text-xs">
-          <div>
-            <div class="font-black text-slate-800 text-sm">${d.full_name}</div>
-            <div class="text-slate-500 font-medium">📞 ${d.phone} • 📍 ${d.neighborhood}</div>
-            <div class="text-[10px] text-pastef-green font-bold mt-0.5">Saisi par : ${d.agent || 'Agent'}</div>
+      const mornContainer = document.getElementById('morningItemsContainer');
+      if (mornContainer) {
+        const recentMorn = morningDonations.slice(0, 15);
+        mornContainer.innerHTML = recentMorn.length ? recentMorn.map(d => `
+          <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl flex justify-between items-center text-xs">
+            <div>
+              <div class="font-black text-slate-800 text-sm">${d.full_name || 'Donneur anonyme'}</div>
+              <div class="text-slate-500 font-medium">📞 ${d.phone || 'Non renseigné'} • 📍 ${d.neighborhood || 'Serigne Mansour Sy 1'}</div>
+              <div class="text-[10px] text-pastef-green font-bold mt-0.5">Saisi par : ${d.agent || 'Agent'}</div>
+            </div>
+            <span class="bg-pastef-lightRed text-pastef-red font-black px-2.5 py-1 rounded-xl border border-pastef-red/30">
+              2 moust.
+            </span>
           </div>
-          <span class="bg-pastef-lightRed text-pastef-red font-black px-2.5 py-1 rounded-xl border border-pastef-red/30">
-            2 moust.
-          </span>
-        </div>
-      `).join('') : '<p class="text-slate-400 italic py-2 text-center">Aucun don enregistré.</p>';
+        `).join('') : '<p class="text-slate-400 italic py-2 text-center">Aucun don enregistré.</p>';
+      }
 
       renderEveningList();
     }
@@ -783,6 +790,13 @@
     } else {
       document.getElementById('loginModal').classList.remove('hidden');
     }
+
+    // Actualisation automatique en temps réel toutes les 5 secondes
+    setInterval(() => {
+      if (currentUser) {
+        loadAllData();
+      }
+    }, 5000);
   </script>
 </body>
 </html>
