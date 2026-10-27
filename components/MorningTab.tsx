@@ -170,11 +170,15 @@ export default function MorningTab({
 
   // Filtrage et recherche rapide
   const filteredDonations = donations.filter(item => {
-    const matchesSearch =
-      item.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.phone.includes(searchTerm);
+    const nameMatch = (item.fullName || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const phoneMatch = (item.phone || '').includes(searchTerm);
+    const matchesSearch = !searchTerm || nameMatch || phoneMatch;
+
     const matchesNeighborhood =
-      filterNeighborhood === 'ALL' || item.neighborhood === filterNeighborhood;
+      filterNeighborhood === 'ALL' ||
+      (item.neighborhood || '').includes(filterNeighborhood) ||
+      (filterNeighborhood.includes('Mansour Sy 1') && (item.neighborhood || '').includes('S.M.SY 1'));
+
     return matchesSearch && matchesNeighborhood;
   });
 
