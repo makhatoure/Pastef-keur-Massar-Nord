@@ -28,9 +28,11 @@ export default function Navbar({
       {/* Barre supérieure principale */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="h-9 w-9 rounded-lg bg-emerald-700 flex items-center justify-center text-white font-bold text-lg shadow-sm flex-shrink-0">
-            P
-          </div>
+          <img
+            src="/pastef-logo.png"
+            alt="Logo Pastef"
+            className="h-10 w-10 object-contain rounded-lg flex-shrink-0 bg-white"
+          />
           <div className="min-w-0">
             <h1 className="text-xs sm:text-sm font-bold text-slate-900 leading-tight truncate">
               {OFFICIAL_CELL_NAME}

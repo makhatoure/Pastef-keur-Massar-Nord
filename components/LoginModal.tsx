@@ -51,8 +51,8 @@ export default function LoginModal({ onLoginSuccess }: LoginModalProps) {
       <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-slate-200">
         {/* En-tête officiel */}
         <div className="bg-emerald-700 text-white p-5 text-center">
-          <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-2 font-black text-2xl">
-            P
+          <div className="w-16 h-16 bg-white rounded-2xl p-1.5 flex items-center justify-center mx-auto mb-2.5 shadow-md">
+            <img src="/pastef-logo.png" alt="Pastef" className="w-full h-full object-contain" />
           </div>
           <h2 className="text-base font-bold tracking-tight">{OFFICIAL_CELL_NAME}</h2>
           <p className="text-emerald-100 text-xs mt-1">Espace sécurisé de gestion de la journée</p>
