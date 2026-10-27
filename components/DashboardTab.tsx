@@ -4,13 +4,17 @@ import React from 'react';
 import { OFFICIAL_CELL_NAME } from './Navbar';
 import { HeartHandshake, Users, PackageCheck, AlertCircle, TrendingUp, MapPin } from 'lucide-react';
 
+import { User } from '@/lib/types';
+
 interface DashboardTabProps {
   stats: any;
   stock: any;
+  currentUser?: User | null;
   onNavigateTab: (tab: string) => void;
 }
 
-export default function DashboardTab({ stats, stock, onNavigateTab }: DashboardTabProps) {
+export default function DashboardTab({ stats, stock, currentUser, onNavigateTab }: DashboardTabProps) {
+  const isAdmin = currentUser?.role === 'ADMIN';
   const morning = stats?.morning || { beneficiariesServed: 0, mosquitoNetsDistributed: 0, byNeighborhood: {} };
   const evening = stats?.evening || { totalCensus: 0, servedCount: 0, pendingCount: 0, mosquitoNetsDistributed: 0, censusByNeighborhood: {}, servedByNeighborhood: {} };
   const global = stats?.global || { totalMorning: 0, totalEvening: 0, totalDistributed: 0, remainingStock: 0, initialStock: 0, entriesTotal: 0 };
@@ -26,7 +30,7 @@ export default function DashboardTab({ stats, stock, onNavigateTab }: DashboardT
             </span>
             <h2 className="text-lg sm:text-xl font-black tracking-tight">{OFFICIAL_CELL_NAME}</h2>
             <p className="text-xs sm:text-sm text-emerald-200 mt-0.5">
-              Suivi en temps réel des deux opérations (Don de Sang & Podium) et du stock de moustiquaires.
+              Suivi en temps réel des deux opérations (Don de Sang & Podium){isAdmin ? ' et du stock de moustiquaires' : ''}.
             </p>
           </div>
           {stock.isClosed && (
@@ -44,16 +48,18 @@ export default function DashboardTab({ stats, stock, onNavigateTab }: DashboardT
           <TrendingUp className="w-4 h-4 text-emerald-700" />
           Bilan Général & Situation du Stock
         </h3>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
-          <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
-            <span className="text-[11px] font-medium text-slate-500">Stock Restant Réel</span>
-            <div className="text-2xl font-black text-emerald-700 mt-0.5">
-              {global.remainingStock}
+        <div className={`grid gap-2.5 sm:gap-3.5 ${isAdmin ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-3'}`}>
+          {isAdmin && (
+            <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+              <span className="text-[11px] font-medium text-slate-500">Stock Restant Réel</span>
+              <div className="text-2xl font-black text-emerald-700 mt-0.5">
+                {global.remainingStock}
+              </div>
+              <span className="text-[10px] text-slate-400">
+                Sur {global.initialStock + global.entriesTotal} au départ
+              </span>
             </div>
-            <span className="text-[10px] text-slate-400">
-              Sur {global.initialStock + global.entriesTotal} au départ
-            </span>
-          </div>
+          )}
 
           <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
             <span className="text-[11px] font-medium text-slate-500">Total Distribué Journée</span>

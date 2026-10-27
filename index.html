@@ -113,20 +113,24 @@
       </div>
     </div>
 
-    <!-- Switcher simplifié 2 circuits (Matin / Soir) pour l'agent, + Admin pour le responsable -->
+    <!-- Switcher 3 onglets (Matin / Soir / Bilan & Stats) + Gestion pour Admin -->
     <div class="bg-slate-100/90 border-t border-slate-200 px-3 py-1.5">
       <div class="max-w-2xl mx-auto flex gap-1.5 text-xs font-black">
-        <button onclick="switchCircuit('morning')" id="tab-btn-morning" class="flex-1 py-2 px-3 rounded-xl bg-pastef-red text-white shadow-xs text-center transition flex items-center justify-center gap-1.5">
+        <button onclick="switchCircuit('morning')" id="tab-btn-morning" class="flex-1 py-2 px-2.5 rounded-xl bg-pastef-red text-white shadow-xs text-center transition flex items-center justify-center gap-1">
           <span>🩸</span>
-          <span>MATIN (Don de sang)</span>
+          <span class="truncate">MATIN (Sang)</span>
         </button>
-        <button onclick="switchCircuit('evening')" id="tab-btn-evening" class="flex-1 py-2 px-3 rounded-xl bg-white text-slate-700 text-center transition border border-slate-200 flex items-center justify-center gap-1.5">
+        <button onclick="switchCircuit('evening')" id="tab-btn-evening" class="flex-1 py-2 px-2.5 rounded-xl bg-white text-slate-700 text-center transition border border-slate-200 flex items-center justify-center gap-1">
           <span>🎪</span>
-          <span>SOIR (Podium)</span>
+          <span class="truncate">SOIR (Podium)</span>
+        </button>
+        <button onclick="switchCircuit('stats')" id="tab-btn-stats" class="flex-1 py-2 px-2.5 rounded-xl bg-white text-slate-700 text-center transition border border-slate-200 flex items-center justify-center gap-1">
+          <span>📊</span>
+          <span class="truncate">BILAN & STATS</span>
         </button>
         <button onclick="switchCircuit('admin')" id="tab-btn-admin" class="hidden py-2 px-3 rounded-xl bg-white text-slate-700 text-center transition border border-slate-200 flex items-center justify-center gap-1">
           <span>⚙️</span>
-          <span>Gestion</span>
+          <span>Admin</span>
         </button>
       </div>
     </div>
@@ -230,7 +234,42 @@
       </div>
     </div>
 
-    <!-- ================= 3. ESPACE RESPONSABLE / ADMIN (RÉSERVÉ) ================= -->
+    <!-- ================= 3. STATISTIQUES & BILAN OPÉRATIONNEL ================= -->
+    <div id="circuit-stats" class="hidden space-y-4">
+      <div class="bg-gradient-to-r from-emerald-800 to-emerald-950 text-white p-5 rounded-3xl shadow-sm border-l-4 border-pastef-red space-y-3">
+        <div class="flex justify-between items-center">
+          <span class="text-xs uppercase font-bold text-emerald-200">Bilan des Distributions</span>
+          <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-white">Temps Réel</span>
+        </div>
+        <div class="grid grid-cols-3 gap-2 text-center text-xs">
+          <div class="bg-white/10 p-2.5 rounded-2xl">
+            <span class="text-emerald-200">Matin (Sang)</span>
+            <div id="statMornTotal" class="text-xl font-black mt-0.5">0</div>
+            <span class="text-[9px] text-emerald-300">moustiquaires</span>
+          </div>
+          <div class="bg-white/10 p-2.5 rounded-2xl">
+            <span class="text-emerald-200">Soir (Podium)</span>
+            <div id="statEveTotal" class="text-xl font-black mt-0.5">0</div>
+            <span class="text-[9px] text-emerald-300">moustiquaires</span>
+          </div>
+          <div class="bg-white text-emerald-950 p-2.5 rounded-2xl shadow-xs">
+            <span class="text-emerald-800 font-bold">Total Donné</span>
+            <div id="statTotalOut" class="text-xl font-black mt-0.5">0</div>
+            <span class="text-[9px] text-emerald-700 font-semibold">remises</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Répartition par quartier -->
+      <div class="bg-white rounded-3xl border border-slate-200 p-4 shadow-xs space-y-3">
+        <h3 class="text-xs font-black uppercase text-slate-700">Répartition par Quartier</h3>
+        <div id="statsNeighborhoodContainer" class="space-y-2 text-xs">
+          <!-- Rempli dynamiquement -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= 4. ESPACE RESPONSABLE / ADMIN (RÉSERVÉ) ================= -->
     <div id="circuit-admin" class="hidden space-y-4">
       
       <!-- Résumé du stock (Uniquement pour le responsable) -->
@@ -361,17 +400,22 @@
     }
 
     function switchCircuit(circuit) {
-      ['morning', 'evening', 'admin'].forEach(c => {
-        document.getElementById(`circuit-${c}`).classList.add('hidden');
+      ['morning', 'evening', 'stats', 'admin'].forEach(c => {
+        const el = document.getElementById(`circuit-${c}`);
+        if (el) el.classList.add('hidden');
         const btn = document.getElementById(`tab-btn-${c}`);
-        if (btn) btn.className = 'flex-1 py-2 px-3 rounded-xl bg-white text-slate-700 text-center transition border border-slate-200 flex items-center justify-center gap-1.5 font-bold';
+        if (btn) btn.className = 'flex-1 py-2 px-2.5 rounded-xl bg-white text-slate-700 text-center transition border border-slate-200 flex items-center justify-center gap-1 font-bold';
       });
 
-      document.getElementById(`circuit-${circuit}`).classList.remove('hidden');
+      const target = document.getElementById(`circuit-${circuit}`);
+      if (target) target.classList.remove('hidden');
       const activeBtn = document.getElementById(`tab-btn-${circuit}`);
-      if (circuit === 'morning') activeBtn.className = 'flex-1 py-2 px-3 rounded-xl bg-pastef-red text-white shadow-xs text-center transition flex items-center justify-center gap-1.5 font-black';
-      if (circuit === 'evening') activeBtn.className = 'flex-1 py-2 px-3 rounded-xl bg-pastef-green text-white shadow-xs text-center transition flex items-center justify-center gap-1.5 font-black';
-      if (circuit === 'admin') activeBtn.className = 'py-2 px-3 rounded-xl bg-slate-900 text-white shadow-xs text-center transition flex items-center justify-center gap-1 font-black';
+      if (activeBtn) {
+        if (circuit === 'morning') activeBtn.className = 'flex-1 py-2 px-2.5 rounded-xl bg-pastef-red text-white shadow-xs text-center transition flex items-center justify-center gap-1 font-black';
+        if (circuit === 'evening') activeBtn.className = 'flex-1 py-2 px-2.5 rounded-xl bg-pastef-green text-white shadow-xs text-center transition flex items-center justify-center gap-1 font-black';
+        if (circuit === 'stats') activeBtn.className = 'flex-1 py-2 px-2.5 rounded-xl bg-emerald-800 text-white shadow-xs text-center transition flex items-center justify-center gap-1 font-black';
+        if (circuit === 'admin') activeBtn.className = 'py-2 px-3 rounded-xl bg-slate-900 text-white shadow-xs text-center transition flex items-center justify-center gap-1 font-black';
+      }
     }
 
     function setMornQuarter(q) {
@@ -429,13 +473,43 @@
       document.getElementById('admTotalOut').innerText = calc.totalOut;
       document.getElementById('admRemainingStock').innerText = calc.remaining;
 
+      // Mise à jour Statistiques générales (accessibles à tous, sans stock)
+      const statMorn = document.getElementById('statMornTotal');
+      if (statMorn) statMorn.innerText = calc.morningOut;
+      const statEve = document.getElementById('statEveTotal');
+      if (statEve) statEve.innerText = calc.eveningOut;
+      const statTotal = document.getElementById('statTotalOut');
+      if (statTotal) statTotal.innerText = calc.totalOut;
+
+      // Répartition par quartier
+      const statsNeighContainer = document.getElementById('statsNeighborhoodContainer');
+      if (statsNeighContainer) {
+        const quarters = ['S.M.SY 1', 'D.S.2.E', 'S.M.SY 2', 'Autre quartier'];
+        statsNeighContainer.innerHTML = quarters.map(q => {
+          const mornCount = morningDonations.filter(d => d.neighborhood === q).length;
+          const eveServed = eveningBeneficiaries.filter(b => b.neighborhood === q && b.status === 'SERVI').length;
+          const eveTotal = eveningBeneficiaries.filter(b => b.neighborhood === q).length;
+          return `
+            <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
+              <span class="font-bold text-slate-800">${q}</span>
+              <div class="flex items-center gap-2">
+                <span class="text-rose-700 font-semibold">🩸 Sang: ${mornCount} (${mornCount * 2} moust.)</span>
+                <span class="text-slate-300">|</span>
+                <span class="text-emerald-700 font-semibold">🎪 Podium: ${eveServed}/${eveTotal} servis</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
       // Derniers dons matin
-      const recentMorn = morningDonations.slice(0, 5);
+      const recentMorn = morningDonations.slice(0, 10);
       document.getElementById('morningItemsContainer').innerHTML = recentMorn.length ? recentMorn.map(d => `
         <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl flex justify-between items-center text-xs">
           <div>
             <div class="font-black text-slate-800 text-sm">${d.full_name}</div>
-            <div class="text-slate-500 font-medium">${d.phone} • ${d.neighborhood}</div>
+            <div class="text-slate-500 font-medium">📞 ${d.phone} • 📍 ${d.neighborhood}</div>
+            <div class="text-[10px] text-pastef-green font-bold mt-0.5">Saisi par : ${d.agent || 'Agent'}</div>
           </div>
           <span class="bg-pastef-lightRed text-pastef-red font-black px-2.5 py-1 rounded-xl border border-pastef-red/30">
             2 moust.
@@ -473,7 +547,7 @@
         phone: phone,
         neighborhood: neighborhood,
         quantity: 2,
-        agent: currentUser?.name || 'Agent Matin'
+        agent: currentUser?.name || 'Agent'
       }]).select().single();
 
       btn.disabled = false;
@@ -504,7 +578,8 @@
         <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex justify-between items-center text-xs">
           <div>
             <div class="font-black text-slate-900 text-sm">${b.full_name}</div>
-            <div class="text-slate-500 font-medium">${b.phone} • ${b.neighborhood} (Liste: ${b.origin_chief_or_list})</div>
+            <div class="text-slate-500 font-medium">📞 ${b.phone} • 📍 ${b.neighborhood} (Liste: ${b.origin_chief_or_list})</div>
+            ${b.served_by ? `<div class="text-[10px] text-pastef-green font-bold mt-0.5">Servi par : ${b.served_by} (${b.quantity_given || 2} moust.)</div>` : (b.created_by ? `<div class="text-[10px] text-slate-400 mt-0.5">Inscrit par : ${b.created_by}</div>` : '')}
           </div>
           <div>
             ${b.status !== 'SERVI' ? `

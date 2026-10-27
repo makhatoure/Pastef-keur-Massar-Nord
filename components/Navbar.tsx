@@ -107,6 +107,7 @@ export default function Navbar({
                 { id: 'admin', label: 'Administration', icon: '🛡️' },
               ]
             : [
+                { id: 'dashboard', label: 'Bilan & Statistiques', icon: '📊' },
                 { id: 'morning', label: 'Don de Sang (Matin)', icon: '🩸' },
                 { id: 'evening', label: 'Distribution Podium (Soir)', icon: '🎪' },
               ]

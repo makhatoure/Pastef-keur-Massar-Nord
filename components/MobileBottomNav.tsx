@@ -24,7 +24,8 @@ export default function MobileBottomNav({
         { id: 'reports', label: 'Rapports', icon: FileSpreadsheet },
       ]
     : [
-        { id: 'morning', label: 'Matin (Don de Sang)', icon: HeartHandshake },
+        { id: 'dashboard', label: 'Bilan', icon: BarChart3 },
+        { id: 'morning', label: 'Matin (Sang)', icon: HeartHandshake },
         { id: 'evening', label: 'Soir (Podium)', icon: Users },
       ];
 

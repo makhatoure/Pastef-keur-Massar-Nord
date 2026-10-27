@@ -121,10 +121,11 @@ export default function Home() {
           </div>
         ) : (
           <>
-            {activeTab === 'dashboard' && currentUser.role === 'ADMIN' && (
+            {activeTab === 'dashboard' && (
               <DashboardTab
                 stats={stats}
                 stock={stock}
+                currentUser={currentUser}
                 onNavigateTab={setActiveTab}
               />
             )}
