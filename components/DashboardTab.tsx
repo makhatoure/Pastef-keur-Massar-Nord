@@ -21,32 +21,18 @@ export default function DashboardTab({ stats, stock, currentUser, onNavigateTab 
 
   return (
     <div className="space-y-5 pb-16">
-      {/* Bannière d'en-tête */}
-      <div className="bg-gradient-to-r from-emerald-800 to-emerald-950 text-white rounded-2xl p-4 sm:p-6 shadow-md">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-700/60 text-emerald-100 border border-emerald-600/50 mb-1">
-              Tableau de Bord Officiel
-            </span>
-            <h2 className="text-lg sm:text-xl font-black tracking-tight">{OFFICIAL_CELL_NAME}</h2>
-            <p className="text-xs sm:text-sm text-emerald-200 mt-0.5">
-              Suivi en temps réel des deux opérations (Don de Sang & Podium){isAdmin ? ' et du stock de moustiquaires' : ''}.
-            </p>
-          </div>
-          {stock.isClosed && (
-            <div className="self-start sm:self-center px-3 py-1.5 rounded-xl bg-rose-600/90 text-white text-xs font-bold flex items-center gap-1.5">
-              <AlertCircle className="w-4 h-4" />
-              <span>Opérations Clôturées</span>
-            </div>
-          )}
+      {stock.isClosed && (
+        <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs font-bold flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+          <span>Opérations de distribution clôturées.</span>
         </div>
-      </div>
+      )}
 
       {/* Cartes Clés - Bilan Général & Stock */}
       <div>
         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1.5">
           <TrendingUp className="w-4 h-4 text-emerald-700" />
-          Bilan Général & Situation du Stock
+          Bilan Général des Distributions
         </h3>
         <div className={`grid gap-2.5 sm:gap-3.5 ${isAdmin ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-3'}`}>
           {isAdmin && (
@@ -87,8 +73,9 @@ export default function DashboardTab({ stats, stock, currentUser, onNavigateTab 
         </div>
       </div>
 
-      {/* Circuits Opérationnels Distincts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Circuits Opérationnels Distincts (Visible UNIQUEMENT côté ADMIN) */}
+      {isAdmin && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Module Matin : Don de sang */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
           <div className="bg-teal-700 text-white p-3.5 flex items-center justify-between">
@@ -223,6 +210,7 @@ export default function DashboardTab({ stats, stock, currentUser, onNavigateTab 
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }
