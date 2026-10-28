@@ -102,16 +102,91 @@ export default function DashboardTab({ stats: propStats, stock: propStock, curre
     }
   };
 
+  // Chargement silencieux en tâche de fond pour actualisation automatique fluide
   useEffect(() => {
     loadFreshStats();
+    // Actualisation automatique en direct toutes les 4 secondes
+    const interval = setInterval(() => {
+      // Chargement direct sans passer par setIsRefreshing pour éviter tout clignotement
+      Promise.all([
+        supabaseClient.from('stock_state').select('*').eq('id', 1).single(),
+        supabaseClient.from('stock_entries').select('*'),
+        supabaseClient.from('morning_donations').select('*'),
+        supabaseClient.from('evening_beneficiaries').select('*'),
+      ]).then(([resStock, resEntries, resMorn, resEve]) => {
+        const initial = resStock.data?.initial_stock ?? 500;
+        const entriesTotal = (resEntries.data || []).reduce((s: number, e: any) => s + (Number(e.quantity) || 0), 0);
+        const mornList = resMorn.data || [];
+        const eveList = resEve.data || [];
+
+        const morningDistributed = mornList.length * 2;
+        const eveningServed = eveList.filter((b: any) => b.status === 'SERVI');
+        const eveningDistributed = eveningServed.reduce((s: number, b: any) => s + (Number(b.quantity_given) || 2), 0);
+        const totalDistributed = morningDistributed + eveningDistributed;
+        const remainingStock = initial + entriesTotal - totalDistributed;
+
+        const morningByNeighborhood: Record<string, number> = {};
+        mornList.forEach((d: any) => {
+          const q = d.neighborhood?.trim() || 'Non spécifié';
+          morningByNeighborhood[q] = (morningByNeighborhood[q] || 0) + 1;
+        });
+
+        const eveningCensusByNeighborhood: Record<string, number> = {};
+        const eveningServedByNeighborhood: Record<string, number> = {};
+        eveList.forEach((b: any) => {
+          const q = b.neighborhood?.trim() || 'Non spécifié';
+          eveningCensusByNeighborhood[q] = (eveningCensusByNeighborhood[q] || 0) + 1;
+          if (b.status === 'SERVI') {
+            eveningServedByNeighborhood[q] = (eveningServedByNeighborhood[q] || 0) + 1;
+          }
+        });
+
+        setStock({
+          initial,
+          initialStock: initial,
+          entriesTotal,
+          morningDistributed,
+          eveningDistributed,
+          totalDistributed,
+          remaining: remainingStock,
+          isClosed: Boolean(resStock.data?.is_closed),
+        });
+
+        setStats({
+          morning: {
+            beneficiariesServed: mornList.length,
+            mosquitoNetsDistributed: morningDistributed,
+            byNeighborhood: morningByNeighborhood,
+          },
+          evening: {
+            totalCensus: eveList.length,
+            servedCount: eveningServed.length,
+            pendingCount: eveList.length - eveningServed.length,
+            mosquitoNetsDistributed: eveningDistributed,
+            censusByNeighborhood: eveningCensusByNeighborhood,
+            servedByNeighborhood: eveningServedByNeighborhood,
+          },
+          global: {
+            totalMorning: morningDistributed,
+            totalEvening: eveningDistributed,
+            totalDistributed,
+            remainingStock,
+            initialStock: initial,
+            entriesTotal,
+          },
+        });
+      }).catch(err => console.error("Erreur auto-refresh stats:", err));
+    }, 4000);
+
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
-    if (propStats) setStats(propStats);
+    if (propStats && !stats) setStats(propStats);
   }, [propStats]);
 
   useEffect(() => {
-    if (propStock) setStock(propStock);
+    if (propStock && !stock.totalDistributed) setStock(propStock);
   }, [propStock]);
 
   const morning = stats?.morning || { beneficiariesServed: 0, mosquitoNetsDistributed: 0, byNeighborhood: {} };
