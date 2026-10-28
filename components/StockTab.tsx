@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, StockEntry } from '@/lib/types';
-import { Boxes, PlusCircle, History, AlertTriangle, ShieldCheck, TrendingDown, TrendingUp, CheckCircle2 } from 'lucide-react';
+import { Boxes, PlusCircle, History, AlertTriangle, ShieldCheck, TrendingDown, TrendingUp, CheckCircle2, RefreshCw } from 'lucide-react';
+import { supabaseClient } from '@/lib/supabase-client';
 
 interface StockTabProps {
   stock: any;
@@ -12,11 +13,78 @@ interface StockTabProps {
 }
 
 export default function StockTab({
-  stock,
-  defaultEveningQty,
+  stock: propStock,
+  defaultEveningQty: propDefaultEveningQty,
   currentUser,
   onRefresh,
 }: StockTabProps) {
+  // États dynamiques synchronisés directement avec Supabase
+  const [stock, setStock] = useState<any>(propStock || {
+    initial: 500,
+    entriesTotal: 0,
+    morningDistributed: 0,
+    eveningDistributed: 0,
+    totalDistributed: 0,
+    remaining: 500,
+    entries: [],
+  });
+  const [defaultEveningQty, setDefaultEveningQty] = useState(propDefaultEveningQty || 2);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Fonction de calcul direct et temps réel
+  const fetchLiveStock = async () => {
+    try {
+      const [resStock, resEntries, resMorn, resEve] = await Promise.all([
+        supabaseClient.from('stock_state').select('*').limit(1),
+        supabaseClient.from('stock_entries').select('*').order('created_at', { ascending: false }),
+        supabaseClient.from('morning_donations').select('*'),
+        supabaseClient.from('evening_beneficiaries').select('*'),
+      ]);
+
+      const stateData = (resStock && resStock.data && resStock.data.length > 0) ? resStock.data[0] : null;
+      const initial = stateData?.initial_stock ?? 500;
+      const dQty = stateData?.default_evening_qty ?? 2;
+      setDefaultEveningQty(dQty);
+
+      const entriesList = resEntries.data || [];
+      const entriesTotal = entriesList.reduce((s: number, e: any) => s + (Number(e.quantity) || 0), 0);
+      const mornList = resMorn.data || [];
+      const eveList = resEve.data || [];
+
+      const morningDistributed = mornList.length * 2;
+      const eveningServed = eveList.filter((b: any) => b.status === 'SERVI');
+      const eveningDistributed = eveningServed.reduce((s: number, b: any) => s + (Number(b.quantity_given) || 2), 0);
+      const totalDistributed = morningDistributed + eveningDistributed;
+      const remaining = initial + entriesTotal - totalDistributed;
+
+      setStock({
+        initial,
+        initialStock: initial,
+        entriesTotal,
+        morningDistributed,
+        eveningDistributed,
+        totalDistributed,
+        remaining,
+        isClosed: Boolean(stateData?.is_closed),
+        entries: entriesList.map((e: any) => ({
+          id: e.id,
+          date: e.created_at,
+          quantity: e.quantity,
+          reason: e.reason,
+          addedBy: e.added_by,
+        })),
+      });
+    } catch (err) {
+      console.error('Erreur chargement direct stock:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchLiveStock();
+    // Actualisation silencieuse toutes les 4 secondes
+    const interval = setInterval(fetchLiveStock, 4000);
+    return () => clearInterval(interval);
+  }, []);
   // Saisie d'une nouvelle entrée de stock
   const [showAddEntryModal, setShowAddEntryModal] = useState(false);
   const [entryQty, setEntryQty] = useState('');
@@ -71,6 +139,7 @@ export default function StockTab({
         setShowAddEntryModal(false);
         setEntryQty('');
         setEntryReason('');
+        await fetchLiveStock();
         onRefresh();
       } else {
         setErrorMsg(data.message || 'Erreur lors de l\'enregistrement.');
@@ -103,6 +172,7 @@ export default function StockTab({
       if (data.success) {
         setSuccessMsg(data.message);
         setShowEditInitialModal(false);
+        await fetchLiveStock();
         onRefresh();
       } else {
         setErrorMsg(data.message || 'Erreur modification');
@@ -162,6 +232,13 @@ export default function StockTab({
 
           {isAdmin && (
             <div className="flex items-center gap-2">
+              <button
+                onClick={fetchLiveStock}
+                className="px-2.5 py-1.5 bg-emerald-900/60 hover:bg-emerald-900 text-white rounded-xl font-bold text-xs transition flex items-center gap-1 border border-emerald-600"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Actualiser</span>
+              </button>
               <button
                 onClick={() => setShowAddEntryModal(true)}
                 className="px-3 py-1.5 bg-white text-emerald-900 rounded-xl font-bold text-xs hover:bg-emerald-50 transition flex items-center gap-1.5 shadow-xs"

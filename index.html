@@ -287,24 +287,33 @@
       <!-- Résumé du stock (Uniquement pour le responsable) -->
       <div class="bg-gradient-to-r from-pastef-green to-pastef-darkGreen text-white p-5 rounded-3xl shadow-sm border-l-4 border-pastef-red space-y-3">
         <div class="flex justify-between items-center">
-          <span class="text-xs uppercase font-bold text-emerald-200">Bilan des Stocks</span>
-          <button onclick="openStockEntryModal()" class="px-3 py-1.5 bg-white text-pastef-darkGreen rounded-xl font-black text-xs shadow-xs">
-            + Ajouter livraison
-          </button>
+          <span class="text-xs uppercase font-bold text-emerald-200">Bilan des Stocks (Temps Réel)</span>
+          <div class="flex items-center gap-2">
+            <button onclick="loadAllData()" class="px-2.5 py-1.5 bg-emerald-900/60 hover:bg-emerald-900 text-white rounded-xl font-bold text-xs border border-emerald-400 flex items-center gap-1 transition">
+              🔄 Actualiser
+            </button>
+            <button onclick="openStockEntryModal()" class="px-3 py-1.5 bg-white text-pastef-darkGreen rounded-xl font-black text-xs shadow-xs hover:bg-emerald-50 transition">
+              + Ajouter livraison
+            </button>
+          </div>
         </div>
 
-        <div class="grid grid-cols-3 gap-2 text-center text-xs">
+        <div class="grid grid-cols-4 gap-2 text-center text-xs">
           <div class="bg-white/10 p-2.5 rounded-2xl">
-            <span class="text-emerald-200">Stock Initial</span>
-            <div id="admInitStock" class="text-xl font-black mt-0.5">500</div>
+            <span class="text-emerald-200 text-[10px]">Stock Initial</span>
+            <div id="admInitStock" class="text-lg sm:text-xl font-black mt-0.5">500</div>
           </div>
           <div class="bg-white/10 p-2.5 rounded-2xl">
-            <span class="text-emerald-200">Distribuées</span>
-            <div id="admTotalOut" class="text-xl font-black mt-0.5">0</div>
+            <span class="text-emerald-200 text-[10px]">Entrées</span>
+            <div id="admEntriesStock" class="text-lg sm:text-xl font-black mt-0.5">+0</div>
+          </div>
+          <div class="bg-white/10 p-2.5 rounded-2xl">
+            <span class="text-emerald-200 text-[10px]">Distribuées</span>
+            <div id="admTotalOut" class="text-lg sm:text-xl font-black mt-0.5">0</div>
           </div>
           <div class="bg-white text-pastef-darkGreen p-2.5 rounded-2xl shadow-xs">
-            <span class="text-pastef-green font-bold">RESTANT</span>
-            <div id="admRemainingStock" class="text-xl font-black mt-0.5">500</div>
+            <span class="text-pastef-green font-black text-[10px]">RESTANT</span>
+            <div id="admRemainingStock" class="text-lg sm:text-xl font-black mt-0.5">500</div>
           </div>
         </div>
       </div>
@@ -524,6 +533,8 @@
       if (elHeaderStock) elHeaderStock.innerText = calc.remaining;
       const elAdmInit = document.getElementById('admInitStock');
       if (elAdmInit) elAdmInit.innerText = calc.initial;
+      const elAdmEnt = document.getElementById('admEntriesStock');
+      if (elAdmEnt) elAdmEnt.innerText = `+${calc.entries}`;
       const elAdmTotal = document.getElementById('admTotalOut');
       if (elAdmTotal) elAdmTotal.innerText = calc.totalOut;
       const elAdmRem = document.getElementById('admRemainingStock');
