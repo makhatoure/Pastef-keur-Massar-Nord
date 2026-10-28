@@ -32,16 +32,18 @@ export default function MorningTab({
   isClosed,
   onRefresh,
 }: MorningTabProps) {
-  // Liste locale synchronisée pour affichage immédiat
-  const [localDonations, setLocalDonations] = useState<MorningDonation[]>(donations);
+  // Synchronisation avec les données renvoyées par Supabase
+  const [localDonations, setLocalDonations] = useState<MorningDonation[]>(donations || []);
+
+  // Re-fetch automatique depuis Supabase dès l'affichage de l'onglet
+  React.useEffect(() => {
+    if (onRefresh) {
+      onRefresh();
+    }
+  }, []);
 
   React.useEffect(() => {
-    // Fusion intelligente : conserver les ajouts locaux récents qui ne sont pas encore revenus dans donations
-    setLocalDonations(prev => {
-      const incomingIds = new Set((donations || []).map(d => d.id));
-      const pendingLocal = prev.filter(p => !incomingIds.has(p.id));
-      return [...pendingLocal, ...(donations || [])];
-    });
+    setLocalDonations(donations || []);
   }, [donations]);
 
   // Formulaire de saisie

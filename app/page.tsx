@@ -73,7 +73,10 @@ export default function Home() {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 15000);
+  }, [activeTab, fetchData]);
+
+  useEffect(() => {
+    const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
   }, [fetchData]);
 
