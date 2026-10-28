@@ -578,6 +578,12 @@
 
       if (error) { alert("Erreur: " + error.message); return; }
 
+      // Ajout immédiat en mémoire locale pour affichage instantané à l'écran
+      if (data) {
+        morningDonations.unshift(data);
+        renderAll();
+      }
+
       await db.from('audit_logs').insert([{
         user_name: currentUser?.name || 'Agent',
         action: 'REMISE_MATIN',
@@ -587,7 +593,7 @@
       document.getElementById('mornName').value = '';
       document.getElementById('mornPhone').value = '';
       alert(`Remise confirmée ! 2 moustiquaires remises à ${name}.`);
-      loadAllData();
+      await loadAllData();
     }
 
     // Liste Soir
