@@ -43,7 +43,7 @@ const INITIAL_DB: AppDatabase = {
 export async function getSupabaseState() {
   try {
     const results = await Promise.allSettled([
-      supabase.from('stock_state').select('*').eq('id', 1).single(),
+      supabase.from('stock_state').select('*').limit(1),
       supabase.from('stock_entries').select('*').order('created_at', { ascending: false }),
       supabase.from('morning_donations').select('*').order('created_at', { ascending: false }),
       supabase.from('evening_beneficiaries').select('*').order('created_at', { ascending: false }),
@@ -51,14 +51,15 @@ export async function getSupabaseState() {
       supabase.from('users').select('*'),
     ]);
 
-    const resStock: any = results[0].status === 'fulfilled' ? results[0].value : { data: null };
+    const stockRows: any = results[0].status === 'fulfilled' ? results[0].value?.data : null;
+    const stockRow = stockRows && stockRows.length > 0 ? stockRows[0] : null;
     const resEntries: any = results[1].status === 'fulfilled' ? results[1].value : { data: [] };
     const resMorn: any = results[2].status === 'fulfilled' ? results[2].value : { data: [] };
     const resEve: any = results[3].status === 'fulfilled' ? results[3].value : { data: [] };
     const resLogs: any = results[4].status === 'fulfilled' ? results[4].value : { data: [] };
     const resUsers: any = results[5].status === 'fulfilled' ? results[5].value : { data: [] };
 
-    const initial = resStock.data?.initial_stock ?? 500;
+    const initial = stockRow?.initial_stock ?? 500;
     const entriesTotal = (resEntries.data || []).reduce((s: number, e: any) => s + (Number(e.quantity) || 0), 0);
     const morningDistributed = (resMorn.data || []).length * 2;
     const eveningDistributed = (resEve.data || [])
@@ -77,7 +78,7 @@ export async function getSupabaseState() {
         eveningDistributed,
         totalDistributed,
         remaining,
-        isClosed: Boolean(resStock.data?.is_closed),
+        isClosed: Boolean(stockRow?.is_closed),
         entries: (resEntries.data || []).map((e: any) => ({
           id: e.id,
           date: e.created_at,
@@ -122,7 +123,7 @@ export async function getSupabaseState() {
         name: u.name,
         role: u.role,
       })),
-      defaultEveningQty: resStock.data?.default_evening_qty ?? 2,
+      defaultEveningQty: stockRow?.default_evening_qty ?? 2,
     };
   } catch (error) {
     console.error('Erreur Supabase, bascule fallback...', error);

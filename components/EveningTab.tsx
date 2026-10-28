@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { EveningBeneficiary, User } from '@/lib/types';
 import { Users, UserPlus, Search, CheckCircle, Clock, AlertCircle, Phone, MapPin, UserCheck, ShieldAlert, Edit, PlusCircle, Filter } from 'lucide-react';
 
+import { supabaseClient } from '@/lib/supabase-client';
+
 interface EveningTabProps {
   beneficiaries: EveningBeneficiary[];
   currentUser: User | null;
@@ -27,13 +29,64 @@ export const EVENING_CHIEFS: Record<string, string> = {
 };
 
 export default function EveningTab({
-  beneficiaries,
+  beneficiaries: propBeneficiaries,
   currentUser,
   remainingStock,
   isClosed,
   defaultQty = 2,
   onRefresh,
 }: EveningTabProps) {
+  // Liste locale synchronisée directement avec Supabase
+  const [localBeneficiaries, setLocalBeneficiaries] = React.useState<EveningBeneficiary[]>(propBeneficiaries || []);
+
+  const fetchLiveBeneficiaries = React.useCallback(async () => {
+    try {
+      const { data, error } = await supabaseClient
+        .from('evening_beneficiaries')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        const mapped: EveningBeneficiary[] = data.map((b: any) => ({
+          id: b.id,
+          fullName: b.full_name,
+          phone: b.phone,
+          neighborhood: b.neighborhood,
+          originChiefOrList: b.origin_chief_or_list,
+          status: b.status,
+          quantityGiven: b.quantity_given || 0,
+          createdAt: b.created_at,
+          createdBy: b.created_by,
+          servedAt: b.served_at,
+          servedBy: b.served_by,
+          isExceptionalAdd: Boolean(b.is_exceptional_add),
+        }));
+        setLocalBeneficiaries(mapped);
+      }
+    } catch (e) {
+      console.error('Erreur chargement podium live:', e);
+    }
+  }, []);
+
+  // Chargement immédiat au montage et synchronisation avec les props
+  React.useEffect(() => {
+    fetchLiveBeneficiaries();
+  }, [fetchLiveBeneficiaries]);
+
+  React.useEffect(() => {
+    if (propBeneficiaries && propBeneficiaries.length > 0) {
+      setLocalBeneficiaries(propBeneficiaries);
+    }
+  }, [propBeneficiaries]);
+
+  // Auto-refresh silencieux toutes les 4s au podium
+  React.useEffect(() => {
+    const timer = setInterval(fetchLiveBeneficiaries, 4000);
+    return () => clearInterval(timer);
+  }, [fetchLiveBeneficiaries]);
+
+  const beneficiaries = localBeneficiaries;
+
   // États de recherche et filtrage
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'EN_ATTENTE' | 'SERVI'>('ALL');
@@ -115,6 +168,7 @@ export default function EveningTab({
       } else {
         setSuccessMsg(data.message);
         setServingBeneficiary(null);
+        fetchLiveBeneficiaries();
         onRefresh();
       }
     } catch (err: any) {
@@ -168,6 +222,7 @@ export default function EveningTab({
         setBulkText('');
         setSingleName('');
         setSinglePhone('');
+        fetchLiveBeneficiaries();
         onRefresh();
       } else {
         setErrorMsg(data.message || 'Erreur lors de l\'enregistrement.');
