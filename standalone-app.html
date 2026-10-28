@@ -111,11 +111,6 @@
           <span id="roleSubtitle" class="text-[11px] font-bold">Agent</span>
         </div>
 
-        <!-- Stock ADMIN uniquement -->
-        <div id="adminStockBadge" class="hidden px-2 py-0.5 rounded-lg text-[11px] font-black bg-emerald-50 text-emerald-800 border border-emerald-300">
-          📦 <span id="headerStockVal">500</span>
-        </div>
-
         <!-- Bouton Déconnexion compact -->
         <button onclick="logout()" title="Se déconnecter" class="p-1.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-pastef-red rounded-lg text-xs font-bold border border-slate-200 transition flex items-center justify-center">
           <span class="hidden sm:inline">Quitter</span>
@@ -421,19 +416,18 @@
       if (!currentUser) return;
       const isAdmin = currentUser.role === 'ADMIN';
 
-      // Affichage du stock UNIQUEMENT pour l'admin
+      // Le stock en haut à droite reste masqué
       const stockBadge = document.getElementById('adminStockBadge');
+      if (stockBadge) stockBadge.classList.add('hidden');
       const adminTabBtn = document.getElementById('tab-btn-admin');
       const roleSubtitle = document.getElementById('roleSubtitle');
 
       if (isAdmin) {
-        stockBadge.classList.remove('hidden');
-        adminTabBtn.classList.remove('hidden');
-        roleSubtitle.innerText = 'Admin';
+        if (adminTabBtn) adminTabBtn.classList.remove('hidden');
+        if (roleSubtitle) roleSubtitle.innerText = 'Admin';
       } else {
-        stockBadge.classList.add('hidden');
-        adminTabBtn.classList.add('hidden');
-        roleSubtitle.innerText = 'Agent';
+        if (adminTabBtn) adminTabBtn.classList.add('hidden');
+        if (roleSubtitle) roleSubtitle.innerText = 'Agent';
       }
     }
 

@@ -45,21 +45,6 @@ export default function Navbar({
 
         {/* Badges d'état et utilisateur */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          {/* Badge Stock restant UNIQUEMENT pour l'Admin */}
-          {currentUser?.role === 'ADMIN' && (
-            <div
-              className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold ${
-                remainingStock > 20
-                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                  : remainingStock > 0
-                  ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                  : 'bg-rose-50 text-rose-800 border border-rose-200 animate-pulse'
-              }`}
-            >
-              <Package className="w-3 h-3" />
-              <span>{remainingStock}</span>
-            </div>
-          )}
 
           {/* Badge Clôture si actif */}
           {isClosed && (
