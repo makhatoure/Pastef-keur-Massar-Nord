@@ -473,21 +473,29 @@
 
     async function loadAllData() {
       try {
-        const results = await Promise.allSettled([
-          db.from('stock_state').select('*').eq('id', 1).single(),
+        const [resStock, resEntries, resMorn, resEve, resLogs] = await Promise.all([
+          db.from('stock_state').select('*').limit(1),
           db.from('stock_entries').select('*').order('created_at', { ascending: false }),
           db.from('morning_donations').select('*').order('created_at', { ascending: false }),
           db.from('evening_beneficiaries').select('*').order('created_at', { ascending: false }),
           db.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(50)
         ]);
 
-        if (results[0].status === 'fulfilled' && results[0].value.data) stockState = results[0].value.data;
-        if (results[1].status === 'fulfilled' && results[1].value.data) stockEntries = results[1].value.data;
-        if (results[2].status === 'fulfilled' && results[2].value.data) {
-          morningDonations = results[2].value.data || [];
+        if (resStock && resStock.data && resStock.data.length > 0) {
+          stockState = resStock.data[0];
         }
-        if (results[3].status === 'fulfilled' && results[3].value.data) eveningBeneficiaries = results[3].value.data;
-        if (results[4].status === 'fulfilled' && results[4].value.data) auditLogs = results[4].value.data;
+        if (resEntries && resEntries.data) {
+          stockEntries = resEntries.data;
+        }
+        if (resMorn && resMorn.data) {
+          morningDonations = resMorn.data;
+        }
+        if (resEve && resEve.data) {
+          eveningBeneficiaries = resEve.data;
+        }
+        if (resLogs && resLogs.data) {
+          auditLogs = resLogs.data;
+        }
 
         renderAll();
       } catch (err) {
