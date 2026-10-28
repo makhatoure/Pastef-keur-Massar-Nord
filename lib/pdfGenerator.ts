@@ -78,27 +78,34 @@ export function generateOfficialPDF(data: ReportData) {
   doc.setFillColor(193, 39, 45);
   doc.rect(0, 26, 210, 1.5, 'F');
 
-  // 1. Logo officiel PASTEF à gauche
+  // 1. Logo officiel PASTEF tout à gauche (fond blanc rond/arrondi propre)
   try {
     if (PASTEF_LOGO_BASE64) {
-      doc.addImage(PASTEF_LOGO_BASE64, 'PNG', 12, 3, 20, 20);
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(10, 3, 20, 20, 2, 2, 'F');
+      doc.addImage(PASTEF_LOGO_BASE64, 'PNG', 11, 4, 18, 18);
     }
   } catch (errLogo) {
     console.warn('Impossible de charger le logo Pastef:', errLogo);
   }
 
-  // 2. Drapeaux du Sénégal de part et d'autre de "RÉPUBLIQUE DU SÉNÉGAL"
-  drawSenegalFlag(doc, 48, 5.5, 12, 8);
-  drawSenegalFlag(doc, 150, 5.5, 12, 8);
-
-  // Texte central
+  // 2. Textes alignés à gauche comme l'en-tête de la plateforme
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(13);
   doc.setFont('helvetica', 'bold');
-  doc.text('RÉPUBLIQUE DU SÉNÉGAL', 105, 11, { align: 'center' });
+  doc.text('Pastef keur Massar nord', 34, 10);
 
-  doc.setFontSize(10.5);
-  doc.text(data.cellName.toUpperCase(), 105, 19, { align: 'center' });
+  doc.setFontSize(9.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(220, 252, 231); // Vert très clair / blanc cassé
+  doc.text('Serigne Mansour Sy 1 · Darou Salam 2 Ext.', 34, 16);
+
+  doc.setFontSize(7.5);
+  doc.setTextColor(187, 247, 208);
+  doc.text('RÉPUBLIQUE DU SÉNÉGAL', 34, 21);
+
+  // 3. Drapeau du Sénégal tout à droite (enlevé à gauche, conservé à droite)
+  drawSenegalFlag(doc, 182, 7.5, 18, 11);
 
   // Titre du document
   doc.setTextColor(30, 41, 59);
