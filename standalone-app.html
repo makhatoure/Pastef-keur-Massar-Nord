@@ -847,17 +847,17 @@
       const calc = calculate();
 
       doc.setFillColor(0, 104, 55);
-      doc.rect(0, 0, 210, 26, 'F');
+      doc.rect(0, 0, 210, 28, 'F');
       doc.setFillColor(193, 39, 45);
-      doc.rect(0, 26, 210, 1.5, 'F');
+      doc.rect(0, 28, 210, 1.5, 'F');
 
       // 1. Logo officiel PASTEF tout à gauche
       try {
         const logoImg = document.querySelector('header img, nav img');
         if (logoImg && logoImg.src) {
           doc.setFillColor(255, 255, 255);
-          doc.roundedRect(10, 3, 20, 20, 2, 2, 'F');
-          doc.addImage(logoImg.src, 'PNG', 11, 4, 18, 18);
+          doc.roundedRect(10, 3.5, 21, 21, 2, 2, 'F');
+          doc.addImage(logoImg.src, 'PNG', 11.5, 5, 18, 18);
         }
       } catch (e) {
         console.warn('Logo Pastef non intégré au PDF:', e);
@@ -865,21 +865,33 @@
 
       // 2. Textes alignés à gauche comme la plateforme
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(13);
+      doc.setFontSize(13.5);
       doc.setFont('helvetica', 'bold');
-      doc.text('Pastef keur Massar nord', 34, 10);
+      doc.text('Pastef keur Massar nord', 35, 12);
 
       doc.setFontSize(9.5);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(220, 252, 231);
-      doc.text('Serigne Mansour Sy 1 · Darou Salam 2 Ext.', 34, 16);
+      doc.text('Serigne Mansour Sy 1 · Darou Salam 2 Ext.', 35, 19);
 
+      // 3. Drapeau du Sénégal tout à droite + République du Sénégal + Devise en dessous
+      const flagW = 18;
+      const flagH = 10;
+      const flagX = 180;
+      const flagY = 3.5;
+      const flagCenter = flagX + flagW / 2;
+
+      drawSenegalFlagPDF(doc, flagX, flagY, flagW, flagH);
+
+      doc.setTextColor(255, 255, 255);
       doc.setFontSize(7.5);
-      doc.setTextColor(187, 247, 208);
-      doc.text('RÉPUBLIQUE DU SÉNÉGAL', 34, 21);
+      doc.setFont('helvetica', 'bold');
+      doc.text('RÉPUBLIQUE DU SÉNÉGAL', flagCenter, 18, { align: 'center' });
 
-      // 3. Drapeau du Sénégal tout à droite (uniquement à droite)
-      drawSenegalFlagPDF(doc, 182, 7.5, 18, 11);
+      doc.setFontSize(6.5);
+      doc.setFont('helvetica', 'italic');
+      doc.setTextColor(253, 239, 66);
+      doc.text('Un Peuple - Un But - Une Foi', flagCenter, 22.5, { align: 'center' });
 
       doc.setTextColor(30, 41, 59);
       doc.setFontSize(14);

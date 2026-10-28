@@ -70,20 +70,20 @@ export function generateOfficialPDF(data: ReportData) {
     format: 'a4',
   });
 
-  // En-tête officiel
+  // En-tête officiel (hauteur 28mm pour aérer)
   doc.setFillColor(11, 102, 35); // Vert Pastef
-  doc.rect(0, 0, 210, 26, 'F');
+  doc.rect(0, 0, 210, 28, 'F');
 
   // Liseré rouge Pastef au bas de la bannière
   doc.setFillColor(193, 39, 45);
-  doc.rect(0, 26, 210, 1.5, 'F');
+  doc.rect(0, 28, 210, 1.5, 'F');
 
   // 1. Logo officiel PASTEF tout à gauche (fond blanc rond/arrondi propre)
   try {
     if (PASTEF_LOGO_BASE64) {
       doc.setFillColor(255, 255, 255);
-      doc.roundedRect(10, 3, 20, 20, 2, 2, 'F');
-      doc.addImage(PASTEF_LOGO_BASE64, 'PNG', 11, 4, 18, 18);
+      doc.roundedRect(10, 3.5, 21, 21, 2, 2, 'F');
+      doc.addImage(PASTEF_LOGO_BASE64, 'PNG', 11.5, 5, 18, 18);
     }
   } catch (errLogo) {
     console.warn('Impossible de charger le logo Pastef:', errLogo);
@@ -91,27 +91,39 @@ export function generateOfficialPDF(data: ReportData) {
 
   // 2. Textes alignés à gauche comme l'en-tête de la plateforme
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(13);
+  doc.setFontSize(13.5);
   doc.setFont('helvetica', 'bold');
-  doc.text('Pastef keur Massar nord', 34, 10);
+  doc.text('Pastef keur Massar nord', 35, 12);
 
   doc.setFontSize(9.5);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(220, 252, 231); // Vert très clair / blanc cassé
-  doc.text('Serigne Mansour Sy 1 · Darou Salam 2 Ext.', 34, 16);
+  doc.text('Serigne Mansour Sy 1 · Darou Salam 2 Ext.', 35, 19);
 
+  // 3. Drapeau du Sénégal tout à droite + République du Sénégal + Devise en dessous
+  const flagW = 18;
+  const flagH = 10;
+  const flagX = 180;
+  const flagY = 3.5;
+  const flagCenter = flagX + flagW / 2; // 189
+
+  drawSenegalFlag(doc, flagX, flagY, flagW, flagH);
+
+  doc.setTextColor(255, 255, 255);
   doc.setFontSize(7.5);
-  doc.setTextColor(187, 247, 208);
-  doc.text('RÉPUBLIQUE DU SÉNÉGAL', 34, 21);
+  doc.setFont('helvetica', 'bold');
+  doc.text('RÉPUBLIQUE DU SÉNÉGAL', flagCenter, 18, { align: 'center' });
 
-  // 3. Drapeau du Sénégal tout à droite (enlevé à gauche, conservé à droite)
-  drawSenegalFlag(doc, 182, 7.5, 18, 11);
+  doc.setFontSize(6.5);
+  doc.setFont('helvetica', 'italic');
+  doc.setTextColor(253, 239, 66); // Jaune doré
+  doc.text('Un Peuple - Un But - Une Foi', flagCenter, 22.5, { align: 'center' });
 
   // Titre du document
   doc.setTextColor(30, 41, 59);
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.text('RAPPORT GÉNÉRAL DE LA JOURNÉE DE DISTRIBUTION', 105, 34, { align: 'center' });
+  doc.text('RAPPORT GÉNÉRAL DE LA JOURNÉE DE DISTRIBUTION', 105, 36, { align: 'center' });
 
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
