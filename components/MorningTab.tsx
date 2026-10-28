@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MorningDonation, User } from '@/lib/types';
-import { HeartHandshake, UserPlus, Search, CheckCircle2, AlertTriangle, Clock, MapPin, Phone, User as UserIcon, Edit3, ShieldAlert } from 'lucide-react';
+import { HeartHandshake, Search, CheckCircle2, AlertTriangle, Clock, MapPin, Phone, Edit3, ShieldAlert } from 'lucide-react';
 
-import { supabase } from '@/lib/db';
+// IMPORTANT : utiliser supabaseClient (lib/supabase-client.ts) et NON lib/db.ts
+// lib/db.ts contient des imports Node.js (fs, path, os) qui crashent côté navigateur
+import { supabaseClient } from '@/lib/supabase-client';
 
 interface MorningTabProps {
   donations: MorningDonation[];
@@ -34,13 +36,13 @@ export default function MorningTab({
   isClosed,
   onRefresh,
 }: MorningTabProps) {
-  // Gestion d'état React : useState dédié pour forcer le redessin du composant
-  const [localDonations, setLocalDonations] = useState<MorningDonation[]>(donations || []);
+  // Gestion d'état React : commence vide → useEffect charge depuis Supabase au montage
+  const [localDonations, setLocalDonations] = useState<MorningDonation[]>([]);
 
   // Fonction de lecture directe depuis Supabase avec vérification d'erreur
   const fetchDonationsFromSupabase = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('morning_donations')
         .select('*')
         .order('created_at', { ascending: false });
@@ -68,19 +70,10 @@ export default function MorningTab({
     }
   };
 
-  // Au chargement (useEffect) : lecture directe appelée dès l'ouverture de la page
-  React.useEffect(() => {
+  // Au montage du composant : charge depuis Supabase (seule source de vérité)
+  useEffect(() => {
     fetchDonationsFromSupabase();
-    if (onRefresh) {
-      onRefresh();
-    }
   }, []);
-
-  React.useEffect(() => {
-    if (donations && donations.length > 0) {
-      setLocalDonations(donations);
-    }
-  }, [donations]);
 
   // Formulaire de saisie
   const [fullName, setFullName] = useState('');
