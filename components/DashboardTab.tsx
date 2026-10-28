@@ -1,10 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { OFFICIAL_CELL_NAME } from './Navbar';
-import { HeartHandshake, Users, PackageCheck, AlertCircle, TrendingUp, MapPin } from 'lucide-react';
-
+import { HeartHandshake, Users, PackageCheck, AlertCircle, TrendingUp, MapPin, RefreshCw } from 'lucide-react';
 import { User } from '@/lib/types';
+import { supabaseClient } from '@/lib/supabase-client';
 
 interface DashboardTabProps {
   stats: any;
@@ -13,11 +13,110 @@ interface DashboardTabProps {
   onNavigateTab: (tab: string) => void;
 }
 
-export default function DashboardTab({ stats, stock, currentUser, onNavigateTab }: DashboardTabProps) {
+export default function DashboardTab({ stats: propStats, stock: propStock, currentUser, onNavigateTab }: DashboardTabProps) {
   const isAdmin = currentUser?.role === 'ADMIN';
+
+  // États dynamiques calculés en temps réel directement depuis Supabase
+  const [stats, setStats] = useState<any>(propStats || null);
+  const [stock, setStock] = useState<any>(propStock || { remaining: 500, initial: 500, totalDistributed: 0 });
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Fonction de calcul dynamique autonome
+  const loadFreshStats = async () => {
+    setIsRefreshing(true);
+    try {
+      const [resStock, resEntries, resMorn, resEve] = await Promise.all([
+        supabaseClient.from('stock_state').select('*').eq('id', 1).single(),
+        supabaseClient.from('stock_entries').select('*'),
+        supabaseClient.from('morning_donations').select('*'),
+        supabaseClient.from('evening_beneficiaries').select('*'),
+      ]);
+
+      const initial = resStock.data?.initial_stock ?? 500;
+      const entriesTotal = (resEntries.data || []).reduce((s: number, e: any) => s + (Number(e.quantity) || 0), 0);
+      const mornList = resMorn.data || [];
+      const eveList = resEve.data || [];
+
+      const morningDistributed = mornList.length * 2;
+      const eveningServed = eveList.filter((b: any) => b.status === 'SERVI');
+      const eveningDistributed = eveningServed.reduce((s: number, b: any) => s + (Number(b.quantity_given) || 2), 0);
+      const totalDistributed = morningDistributed + eveningDistributed;
+      const remainingStock = initial + entriesTotal - totalDistributed;
+
+      // Répartition par quartier Matin
+      const morningByNeighborhood: Record<string, number> = {};
+      mornList.forEach((d: any) => {
+        const q = d.neighborhood?.trim() || 'Non spécifié';
+        morningByNeighborhood[q] = (morningByNeighborhood[q] || 0) + 1;
+      });
+
+      // Répartition par quartier Soir
+      const eveningCensusByNeighborhood: Record<string, number> = {};
+      const eveningServedByNeighborhood: Record<string, number> = {};
+      eveList.forEach((b: any) => {
+        const q = b.neighborhood?.trim() || 'Non spécifié';
+        eveningCensusByNeighborhood[q] = (eveningCensusByNeighborhood[q] || 0) + 1;
+        if (b.status === 'SERVI') {
+          eveningServedByNeighborhood[q] = (eveningServedByNeighborhood[q] || 0) + 1;
+        }
+      });
+
+      setStock({
+        initial,
+        initialStock: initial,
+        entriesTotal,
+        morningDistributed,
+        eveningDistributed,
+        totalDistributed,
+        remaining: remainingStock,
+        isClosed: Boolean(resStock.data?.is_closed),
+      });
+
+      setStats({
+        morning: {
+          beneficiariesServed: mornList.length,
+          mosquitoNetsDistributed: morningDistributed,
+          byNeighborhood: morningByNeighborhood,
+        },
+        evening: {
+          totalCensus: eveList.length,
+          servedCount: eveningServed.length,
+          pendingCount: eveList.length - eveningServed.length,
+          mosquitoNetsDistributed: eveningDistributed,
+          censusByNeighborhood: eveningCensusByNeighborhood,
+          servedByNeighborhood: eveningServedByNeighborhood,
+        },
+        global: {
+          totalMorning: morningDistributed,
+          totalEvening: eveningDistributed,
+          totalDistributed,
+          remainingStock,
+          initialStock: initial,
+          entriesTotal,
+        },
+      });
+    } catch (err) {
+      console.error('Erreur rafraîchissement stats directes:', err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    loadFreshStats();
+  }, []);
+
+  useEffect(() => {
+    if (propStats) setStats(propStats);
+  }, [propStats]);
+
+  useEffect(() => {
+    if (propStock) setStock(propStock);
+  }, [propStock]);
+
   const morning = stats?.morning || { beneficiariesServed: 0, mosquitoNetsDistributed: 0, byNeighborhood: {} };
   const evening = stats?.evening || { totalCensus: 0, servedCount: 0, pendingCount: 0, mosquitoNetsDistributed: 0, censusByNeighborhood: {}, servedByNeighborhood: {} };
-  const global = stats?.global || { totalMorning: 0, totalEvening: 0, totalDistributed: 0, remainingStock: 0, initialStock: 0, entriesTotal: 0 };
+  const global = stats?.global || { totalMorning: 0, totalEvening: 0, totalDistributed: 0, remainingStock: stock.remaining || 0, initialStock: 500, entriesTotal: 0 };
 
   return (
     <div className="space-y-5 pb-16">
@@ -30,10 +129,20 @@ export default function DashboardTab({ stats, stock, currentUser, onNavigateTab 
 
       {/* Cartes Clés - Bilan Général & Stock */}
       <div>
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1.5">
-          <TrendingUp className="w-4 h-4 text-emerald-700" />
-          Bilan Général des Distributions
-        </h3>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+            <TrendingUp className="w-4 h-4 text-emerald-700" />
+            Bilan Général des Distributions
+          </h3>
+          <button
+            onClick={loadFreshStats}
+            disabled={isRefreshing}
+            className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded-lg border border-emerald-200 transition"
+          >
+            <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span>Actualiser</span>
+          </button>
+        </div>
         <div className={`grid gap-2.5 sm:gap-3.5 ${isAdmin ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-3'}`}>
           {isAdmin && (
             <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">

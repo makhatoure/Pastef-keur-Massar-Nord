@@ -249,23 +249,25 @@
       <div class="bg-white rounded-3xl border border-slate-200 p-5 shadow-xs space-y-3">
         <div class="flex justify-between items-center">
           <span class="text-xs uppercase font-bold text-slate-500">Bilan des Distributions</span>
-          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">Temps Réel</span>
+          <button onclick="loadAllData()" class="px-2.5 py-1 rounded-xl text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1 hover:bg-emerald-100 transition">
+            🔄 Actualiser
+          </button>
         </div>
         <div class="grid grid-cols-3 gap-2 text-center text-xs">
           <div class="bg-slate-50 border border-slate-100 p-2.5 rounded-2xl">
-            <span class="text-slate-500 font-medium">Matin (Sang)</span>
+            <span class="text-slate-500 font-medium">Sorties Matin</span>
             <div id="statMornTotal" class="text-xl font-black text-rose-700 mt-0.5">0</div>
-            <span class="text-[9px] text-slate-400">moustiquaires</span>
+            <span id="statMornPersons" class="text-[9px] text-slate-400">0 donneur(s)</span>
           </div>
           <div class="bg-slate-50 border border-slate-100 p-2.5 rounded-2xl">
-            <span class="text-slate-500 font-medium">Soir (Podium)</span>
+            <span class="text-slate-500 font-medium">Sorties Soir</span>
             <div id="statEveTotal" class="text-xl font-black text-emerald-700 mt-0.5">0</div>
-            <span class="text-[9px] text-slate-400">moustiquaires</span>
+            <span id="statEvePersons" class="text-[9px] text-slate-400">0 servi(s)</span>
           </div>
           <div class="bg-slate-900 text-white p-2.5 rounded-2xl shadow-xs">
-            <span class="text-slate-300 font-bold">Total Donné</span>
+            <span class="text-slate-300 font-bold">Total Distribué</span>
             <div id="statTotalOut" class="text-xl font-black text-white mt-0.5">0</div>
-            <span class="text-[9px] text-slate-300 font-semibold">remises</span>
+            <span id="statRemainingOut" class="text-[9px] text-emerald-300 font-semibold">moustiquaires</span>
           </div>
         </div>
       </div>
@@ -522,10 +524,19 @@
       // Mise à jour Statistiques générales (accessibles à tous, sans stock)
       const statMorn = document.getElementById('statMornTotal');
       if (statMorn) statMorn.innerText = calc.morningOut;
+      const statMornP = document.getElementById('statMornPersons');
+      if (statMornP) statMornP.innerText = `${morningDonations.length} donneur(s)`;
+
       const statEve = document.getElementById('statEveTotal');
       if (statEve) statEve.innerText = calc.eveningOut;
+      const statEveP = document.getElementById('statEvePersons');
+      const eveServis = eveningBeneficiaries.filter(b => b.status === 'SERVI').length;
+      if (statEveP) statEveP.innerText = `${eveServis} servi(s)`;
+
       const statTotal = document.getElementById('statTotalOut');
       if (statTotal) statTotal.innerText = calc.totalOut;
+      const statRemOut = document.getElementById('statRemainingOut');
+      if (statRemOut) statRemOut.innerText = `Reste: ${calc.remaining}`;
 
       // Répartition par quartier
       const statsNeighContainer = document.getElementById('statsNeighborhoodContainer');
