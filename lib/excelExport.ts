@@ -11,7 +11,7 @@ export function exportToExcel(
 
   // 1. Feuille Bilan & Stock
   const stockRows = [
-    { Indicateur: 'Cellule', Valeur: 'Cellule Pastef quartiers: S.M.SY 1/ D.S.2.E' },
+    { Indicateur: 'Cellule', Valeur: 'Pastef keur Massar nord' },
     { Indicateur: 'Date du rapport', Valeur: new Date().toLocaleDateString('fr-FR') },
     { Indicateur: 'Statut de clôture', Valeur: stockSummary.isClosed ? 'CLÔTURÉ' : 'EN COURS' },
     { Indicateur: 'Stock Initial', Valeur: stockSummary.initial },

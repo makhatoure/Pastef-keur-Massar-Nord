@@ -134,8 +134,9 @@ export default function ReportsTab({
       })),
       auditLogs: (resLogs.data || []).map((l: any) => ({
         id: l.id,
+        timestamp: l.created_at,
         date: l.created_at,
-        user: l.user_name,
+        user: l.user_name || l.user || 'Système',
         action: l.action,
         details: l.details,
       })),
