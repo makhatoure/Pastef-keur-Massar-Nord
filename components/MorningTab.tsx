@@ -150,7 +150,11 @@ export default function MorningTab({
         setPhone('');
         setCustomNeighborhood('');
         setConfirmModalData(null);
-        onRefresh();
+        
+        // Rechargement immédiat et complet depuis Supabase
+        if (onRefresh) {
+          await onRefresh();
+        }
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'Erreur réseau');

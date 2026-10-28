@@ -618,12 +618,22 @@
 
       if (error) { alert("Erreur: " + error.message); return; }
 
-      // Ajout immédiat en mémoire locale pour affichage instantané à l'écran
-      if (data) {
-        // Éviter les doublons dans l'état local
-        morningDonations = [data, ...morningDonations.filter(d => d.id !== data.id)];
-        renderAll();
+      // Rechargement immédiat de la liste complète depuis Supabase (SELECT direct)
+      try {
+        const { data: refreshedDonations } = await db
+          .from('morning_donations')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (refreshedDonations) {
+          morningDonations = refreshedDonations;
+        }
+      } catch (errFetch) {
+        console.error('Erreur rechargement morning_donations:', errFetch);
+        if (data) {
+          morningDonations = [data, ...morningDonations.filter(d => d.id !== data.id)];
+        }
       }
+      renderAll();
 
       try {
         await db.from('audit_logs').insert([{
@@ -638,11 +648,10 @@
       document.getElementById('mornName').value = '';
       document.getElementById('mornPhone').value = '';
       
-      // Feedback visuel ou confirmation sans écraser le tableau local
       alert(`Remise confirmée ! 2 moustiquaires remises à ${name}.`);
       
-      // Recharger les données globales proprement
-      setTimeout(loadAllData, 1000);
+      // Re-synchronisation générale du stock et des logs
+      loadAllData();
     }
 
     // Liste Soir
