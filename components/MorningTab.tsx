@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { MorningDonation, User } from '@/lib/types';
 import { HeartHandshake, UserPlus, Search, CheckCircle2, AlertTriangle, Clock, MapPin, Phone, User as UserIcon, Edit3, ShieldAlert } from 'lucide-react';
 
+import { supabase } from '@/lib/db';
+
 interface MorningTabProps {
   donations: MorningDonation[];
   currentUser: User | null;
@@ -32,18 +34,52 @@ export default function MorningTab({
   isClosed,
   onRefresh,
 }: MorningTabProps) {
-  // Synchronisation avec les données renvoyées par Supabase
+  // Gestion d'état React : useState dédié pour forcer le redessin du composant
   const [localDonations, setLocalDonations] = useState<MorningDonation[]>(donations || []);
 
-  // Re-fetch automatique depuis Supabase dès l'affichage de l'onglet
+  // Fonction de lecture directe depuis Supabase avec vérification d'erreur
+  const fetchDonationsFromSupabase = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('morning_donations')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error("Erreur Supabase :", error);
+        return;
+      }
+
+      if (data) {
+        const mapped: MorningDonation[] = data.map((d: any) => ({
+          id: d.id,
+          fullName: d.full_name,
+          phone: d.phone,
+          neighborhood: d.neighborhood,
+          quantity: d.quantity || 2,
+          date: d.created_at,
+          agent: d.agent,
+          confirmed: true,
+        }));
+        setLocalDonations(mapped);
+      }
+    } catch (err) {
+      console.error("Erreur chargement Supabase:", err);
+    }
+  };
+
+  // Au chargement (useEffect) : lecture directe appelée dès l'ouverture de la page
   React.useEffect(() => {
+    fetchDonationsFromSupabase();
     if (onRefresh) {
       onRefresh();
     }
   }, []);
 
   React.useEffect(() => {
-    setLocalDonations(donations || []);
+    if (donations && donations.length > 0) {
+      setLocalDonations(donations);
+    }
   }, [donations]);
 
   // Formulaire de saisie
@@ -151,7 +187,8 @@ export default function MorningTab({
         setCustomNeighborhood('');
         setConfirmModalData(null);
         
-        // Rechargement immédiat et complet depuis Supabase
+        // Rechargement immédiat et complet de la table morning_donations depuis Supabase
+        await fetchDonationsFromSupabase();
         if (onRefresh) {
           await onRefresh();
         }
