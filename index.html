@@ -812,7 +812,10 @@
       }
     }
 
-    function downloadOfficialPDF() {
+    async function downloadOfficialPDF() {
+      // Recharger les données en direct depuis Supabase avant génération
+      await loadAllData();
+
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
       const calc = calculate();
@@ -827,11 +830,13 @@
       doc.setFont('helvetica', 'bold');
       doc.text('RÉPUBLIQUE DU SÉNÉGAL — PATRIOTES DU SÉNÉGAL (PASTEF)', 105, 9, { align: 'center' });
       doc.setFontSize(10);
-      doc.text(CELL_NAME.toUpperCase(), 105, 17, { align: 'center' });
+      doc.text('PASTEF KEUR MASSAR NORD', 105, 17, { align: 'center' });
 
       doc.setTextColor(30, 41, 59);
       doc.setFontSize(14);
       doc.text('RAPPORT OFFICIEL DE LA JOURNÉE DE DISTRIBUTION', 105, 36, { align: 'center' });
+
+      const eveServis = eveningBeneficiaries.filter(b => b.status === 'SERVI').length;
 
       doc.autoTable({
         startY: 46,
@@ -839,10 +844,10 @@
         body: [
           ['Stock Initial', `${calc.initial} moustiquaires`],
           ['Entrées enregistrées', `+ ${calc.entries} moustiquaires`],
-          ['Distribué le Matin (Sang)', `- ${calc.morningOut} moustiquaires (${morningDonations.length} personnes × 2)`],
-          ['Distribué le Soir (Podium)', `- ${calc.eveningOut} moustiquaires`],
-          ['TOTAL DISTRIBUÉ', `${calc.totalOut} moustiquaires`],
-          ['STOCK RESTANT', `${calc.remaining} moustiquaires`]
+          ['Distribué le Matin (Don de sang)', `- ${calc.morningOut} moustiquaires (${morningDonations.length} donneurs × 2)`],
+          ['Distribué le Soir (Podium)', `- ${calc.eveningOut} moustiquaires (${eveServis} servis)`],
+          ['TOTAL CUMULÉ DISTRIBUÉ', `${calc.totalOut} moustiquaires`],
+          ['STOCK RESTANT RÉEL', `${calc.remaining} moustiquaires`]
         ],
         theme: 'grid',
         headStyles: { fillColor: [0, 104, 55] }
@@ -851,17 +856,22 @@
       doc.save(`Rapport_Pastef_${new Date().toISOString().split('T')[0]}.pdf`);
     }
 
-    function downloadExcelFile() {
+    async function downloadExcelFile() {
+      // Recharger les données en direct depuis Supabase avant génération
+      await loadAllData();
+
       const calc = calculate();
       const wb = XLSX.utils.book_new();
       const wsStock = XLSX.utils.json_to_sheet([
-        { Indicateur: 'Cellule', Valeur: CELL_NAME },
+        { Indicateur: 'Cellule', Valeur: 'Pastef keur Massar nord' },
         { Indicateur: 'Stock Initial', Valeur: calc.initial },
         { Indicateur: 'Entrées', Valeur: calc.entries },
         { Indicateur: 'Sorties Matin (Sang)', Valeur: calc.morningOut },
+        { Indicateur: 'Donneurs Matin (Nombre)', Valeur: morningDonations.length },
         { Indicateur: 'Sorties Soir (Podium)', Valeur: calc.eveningOut },
+        { Indicateur: 'Bénéficiaires Servis Soir', Valeur: eveningBeneficiaries.filter(b => b.status === 'SERVI').length },
         { Indicateur: 'Total Distribué', Valeur: calc.totalOut },
-        { Indicateur: 'Stock Restant', Valeur: calc.remaining }
+        { Indicateur: 'Stock Restant Réel', Valeur: calc.remaining }
       ]);
       XLSX.utils.book_append_sheet(wb, wsStock, 'Stock');
       XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(morningDonations), 'Matin_Sang');

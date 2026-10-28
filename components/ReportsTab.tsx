@@ -7,6 +7,8 @@ import { generateOfficialPDF } from '@/lib/pdfGenerator';
 import { exportToExcel } from '@/lib/excelExport';
 import { FileDown, FileSpreadsheet, Lock, Unlock, AlertTriangle, CheckCircle, ShieldCheck } from 'lucide-react';
 
+import { supabaseClient } from '@/lib/supabase-client';
+
 interface ReportsTabProps {
   stats: any;
   stock: any;
@@ -18,11 +20,11 @@ interface ReportsTabProps {
 }
 
 export default function ReportsTab({
-  stats,
-  stock,
-  morningDonations,
-  eveningBeneficiaries,
-  auditLogs,
+  stats: propStats,
+  stock: propStock,
+  morningDonations: propMorningDonations,
+  eveningBeneficiaries: propEveningBeneficiaries,
+  auditLogs: propAuditLogs,
   currentUser,
   onRefresh,
 }: ReportsTabProps) {
@@ -35,43 +37,140 @@ export default function ReportsTab({
 
   const isAdmin = currentUser?.role === 'ADMIN';
 
-  const handleDownloadPDF = () => {
-    generateOfficialPDF({
-      cellName: OFFICIAL_CELL_NAME,
-      date: new Date().toLocaleDateString('fr-FR'),
-      isClosed: Boolean(stock.isClosed),
-      closedAt: stock.closedAt,
-      stock: {
-        initial: stock.initial || 0,
-        entriesTotal: stock.entriesTotal || 0,
-        morningDistributed: stock.morningDistributed || 0,
-        eveningDistributed: stock.eveningDistributed || 0,
-        totalDistributed: stock.totalDistributed || 0,
-        remaining: stock.remaining || 0,
-      },
-      morning: stats?.morning || {
-        beneficiariesServed: 0,
-        mosquitoNetsDistributed: 0,
-        byNeighborhood: {},
-      },
-      evening: stats?.evening || {
-        totalCensus: 0,
-        servedCount: 0,
-        pendingCount: 0,
-        mosquitoNetsDistributed: 0,
-        censusByNeighborhood: {},
-        servedByNeighborhood: {},
-      },
+  // Fonction pour extraire l'état réel et exact directement de Supabase
+  const getFreshReportData = async () => {
+    const [resStock, resEntries, resMorn, resEve, resLogs] = await Promise.all([
+      supabaseClient.from('stock_state').select('*').limit(1),
+      supabaseClient.from('stock_entries').select('*').order('created_at', { ascending: false }),
+      supabaseClient.from('morning_donations').select('*').order('created_at', { ascending: false }),
+      supabaseClient.from('evening_beneficiaries').select('*').order('created_at', { ascending: false }),
+      supabaseClient.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(50),
+    ]);
+
+    const stateData = (resStock.data && resStock.data.length > 0) ? resStock.data[0] : null;
+    const initial = stateData?.initial_stock ?? 500;
+    const entriesList = resEntries.data || [];
+    const entriesTotal = entriesList.reduce((s: number, e: any) => s + (Number(e.quantity) || 0), 0);
+    const mornList = resMorn.data || [];
+    const eveList = resEve.data || [];
+
+    const morningDistributed = mornList.length * 2;
+    const eveningServed = eveList.filter((b: any) => b.status === 'SERVI');
+    const eveningDistributed = eveningServed.reduce((s: number, b: any) => s + (Number(b.quantity_given) || 2), 0);
+    const totalDistributed = morningDistributed + eveningDistributed;
+    const remaining = initial + entriesTotal - totalDistributed;
+
+    // Répartition par quartier Matin
+    const morningByNeighborhood: Record<string, number> = {};
+    mornList.forEach((d: any) => {
+      const q = d.neighborhood?.trim() || 'Non spécifié';
+      morningByNeighborhood[q] = (morningByNeighborhood[q] || 0) + 1;
     });
+
+    // Répartition par quartier Soir
+    const eveningCensusByNeighborhood: Record<string, number> = {};
+    const eveningServedByNeighborhood: Record<string, number> = {};
+    eveList.forEach((b: any) => {
+      const q = b.neighborhood?.trim() || 'Non spécifié';
+      eveningCensusByNeighborhood[q] = (eveningCensusByNeighborhood[q] || 0) + 1;
+      if (b.status === 'SERVI') {
+        eveningServedByNeighborhood[q] = (eveningServedByNeighborhood[q] || 0) + 1;
+      }
+    });
+
+    return {
+      stock: {
+        initial,
+        entriesTotal,
+        morningDistributed,
+        eveningDistributed,
+        totalDistributed,
+        remaining,
+        isClosed: Boolean(stateData?.is_closed),
+        closedAt: stateData?.closed_at,
+        closedBy: stateData?.closed_by,
+      },
+      morning: {
+        beneficiariesServed: mornList.length,
+        mosquitoNetsDistributed: morningDistributed,
+        byNeighborhood: morningByNeighborhood,
+      },
+      evening: {
+        totalCensus: eveList.length,
+        servedCount: eveningServed.length,
+        pendingCount: eveList.length - eveningServed.length,
+        mosquitoNetsDistributed: eveningDistributed,
+        censusByNeighborhood: eveningCensusByNeighborhood,
+        servedByNeighborhood: eveningServedByNeighborhood,
+      },
+      morningDonations: mornList.map((d: any) => ({
+        id: d.id,
+        fullName: d.full_name,
+        phone: d.phone,
+        neighborhood: d.neighborhood,
+        quantity: d.quantity || 2,
+        date: d.created_at,
+        agent: d.agent,
+        confirmed: true,
+      })),
+      eveningBeneficiaries: eveList.map((b: any) => ({
+        id: b.id,
+        fullName: b.full_name,
+        phone: b.phone,
+        neighborhood: b.neighborhood,
+        originChiefOrList: b.origin_chief_or_list,
+        status: b.status,
+        quantityGiven: b.quantity_given || 0,
+        createdAt: b.created_at,
+        createdBy: b.created_by,
+        servedAt: b.served_at,
+        servedBy: b.served_by,
+      })),
+      auditLogs: (resLogs.data || []).map((l: any) => ({
+        id: l.id,
+        date: l.created_at,
+        user: l.user_name,
+        action: l.action,
+        details: l.details,
+      })),
+    };
   };
 
-  const handleDownloadExcel = () => {
-    exportToExcel(
-      stock,
-      morningDonations,
-      eveningBeneficiaries,
-      auditLogs
-    );
+  const handleDownloadPDF = async () => {
+    setLoading(true);
+    try {
+      const live = await getFreshReportData();
+      generateOfficialPDF({
+        cellName: 'Pastef keur Massar nord',
+        date: new Date().toLocaleDateString('fr-FR'),
+        isClosed: live.stock.isClosed,
+        closedAt: live.stock.closedAt,
+        stock: live.stock,
+        morning: live.morning,
+        evening: live.evening,
+      });
+    } catch (e: any) {
+      console.error('Erreur génération PDF:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownloadExcel = async () => {
+    setLoading(true);
+    try {
+      const live = await getFreshReportData();
+      exportToExcel(
+        live.stock,
+        live.morningDonations,
+        live.eveningBeneficiaries,
+        live.auditLogs
+      );
+    } catch (e: any) {
+      console.error('Erreur export Excel:', e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCloseOperations = async (e: React.FormEvent) => {
