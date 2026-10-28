@@ -599,11 +599,16 @@
     // Liste Soir
     function renderEveningList() {
       const q = (document.getElementById('eveSearch')?.value || '').toLowerCase();
-      const filtered = eveningBeneficiaries.filter(b => b.full_name.toLowerCase().includes(q) || b.phone.includes(q));
+      const filtered = eveningBeneficiaries.filter(b =>
+        (b.full_name || '').toLowerCase().includes(q) || (b.phone || '').includes(q)
+      );
 
-      document.getElementById('eveCountBadge').innerText = `${filtered.length} personne(s)`;
+      const eveCountBadge = document.getElementById('eveCountBadge');
+      if (eveCountBadge) eveCountBadge.innerText = `${filtered.length} personne(s)`;
 
-      document.getElementById('eveningItemsContainer').innerHTML = filtered.length ? filtered.map(b => `
+      const eveningItemsContainer = document.getElementById('eveningItemsContainer');
+      if (!eveningItemsContainer) return;
+      eveningItemsContainer.innerHTML = filtered.length ? filtered.map(b => `
         <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex justify-between items-center text-xs">
           <div>
             <div class="font-black text-slate-900 text-sm">${b.full_name}</div>
