@@ -36,7 +36,12 @@ export default function MorningTab({
   const [localDonations, setLocalDonations] = useState<MorningDonation[]>(donations);
 
   React.useEffect(() => {
-    setLocalDonations(donations);
+    // Fusion intelligente : conserver les ajouts locaux récents qui ne sont pas encore revenus dans donations
+    setLocalDonations(prev => {
+      const incomingIds = new Set((donations || []).map(d => d.id));
+      const pendingLocal = prev.filter(p => !incomingIds.has(p.id));
+      return [...pendingLocal, ...(donations || [])];
+    });
   }, [donations]);
 
   // Formulaire de saisie
