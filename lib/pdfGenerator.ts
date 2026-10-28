@@ -29,6 +29,40 @@ export interface ReportData {
   };
 }
 
+import { PASTEF_LOGO_BASE64 } from './logo-data';
+
+// Helper pour dessiner le drapeau du Sénégal (Vert - Jaune avec étoile verte - Rouge)
+function drawSenegalFlag(doc: jsPDF, x: number, y: number, w: number = 12, h: number = 8) {
+  const stripeW = w / 3;
+  // Vert
+  doc.setFillColor(0, 133, 63);
+  doc.rect(x, y, stripeW, h, 'F');
+  // Jaune
+  doc.setFillColor(253, 239, 66);
+  doc.rect(x + stripeW, y, stripeW, h, 'F');
+  // Rouge
+  doc.setFillColor(227, 27, 35);
+  doc.rect(x + stripeW * 2, y, stripeW, h, 'F');
+
+  // Étoile verte à 5 branches au centre
+  const cx = x + stripeW * 1.5;
+  const cy = y + h / 2;
+  const rOuter = h * 0.28;
+  const rInner = rOuter * 0.42;
+  const pts: [number, number][] = [];
+  for (let i = 0; i < 10; i++) {
+    const angle = (i * 36 - 90) * (Math.PI / 180);
+    const r = i % 2 === 0 ? rOuter : rInner;
+    pts.push([cx + r * Math.cos(angle), cy + r * Math.sin(angle)]);
+  }
+  doc.setFillColor(0, 133, 63);
+  // Tracer l'étoile avec des triangles
+  for (let i = 0; i < 10; i++) {
+    const next = (i + 1) % 10;
+    doc.triangle(cx, cy, pts[i][0], pts[i][1], pts[next][0], pts[next][1], 'F');
+  }
+}
+
 export function generateOfficialPDF(data: ReportData) {
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -38,14 +72,33 @@ export function generateOfficialPDF(data: ReportData) {
 
   // En-tête officiel
   doc.setFillColor(11, 102, 35); // Vert Pastef
-  doc.rect(0, 0, 210, 24, 'F');
+  doc.rect(0, 0, 210, 26, 'F');
 
+  // Liseré rouge Pastef au bas de la bannière
+  doc.setFillColor(193, 39, 45);
+  doc.rect(0, 26, 210, 1.5, 'F');
+
+  // 1. Logo officiel PASTEF à gauche
+  try {
+    if (PASTEF_LOGO_BASE64) {
+      doc.addImage(PASTEF_LOGO_BASE64, 'PNG', 12, 3, 20, 20);
+    }
+  } catch (errLogo) {
+    console.warn('Impossible de charger le logo Pastef:', errLogo);
+  }
+
+  // 2. Drapeaux du Sénégal de part et d'autre de "RÉPUBLIQUE DU SÉNÉGAL"
+  drawSenegalFlag(doc, 48, 5.5, 12, 8);
+  drawSenegalFlag(doc, 150, 5.5, 12, 8);
+
+  // Texte central
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(14);
+  doc.setFontSize(13);
   doc.setFont('helvetica', 'bold');
-  doc.text('RÉPUBLIQUE DU SÉNÉGAL', 105, 9, { align: 'center' });
-  doc.setFontSize(11);
-  doc.text(data.cellName.toUpperCase(), 105, 17, { align: 'center' });
+  doc.text('RÉPUBLIQUE DU SÉNÉGAL', 105, 11, { align: 'center' });
+
+  doc.setFontSize(10.5);
+  doc.text(data.cellName.toUpperCase(), 105, 19, { align: 'center' });
 
   // Titre du document
   doc.setTextColor(30, 41, 59);

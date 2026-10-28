@@ -812,6 +812,32 @@
       }
     }
 
+    function drawSenegalFlagPDF(doc, x, y, w = 12, h = 8) {
+      const stripeW = w / 3;
+      doc.setFillColor(0, 133, 63);
+      doc.rect(x, y, stripeW, h, 'F');
+      doc.setFillColor(253, 239, 66);
+      doc.rect(x + stripeW, y, stripeW, h, 'F');
+      doc.setFillColor(227, 27, 35);
+      doc.rect(x + stripeW * 2, y, stripeW, h, 'F');
+
+      const cx = x + stripeW * 1.5;
+      const cy = y + h / 2;
+      const rOuter = h * 0.28;
+      const rInner = rOuter * 0.42;
+      const pts = [];
+      for (let i = 0; i < 10; i++) {
+        const angle = (i * 36 - 90) * (Math.PI / 180);
+        const r = i % 2 === 0 ? rOuter : rInner;
+        pts.push([cx + r * Math.cos(angle), cy + r * Math.sin(angle)]);
+      }
+      doc.setFillColor(0, 133, 63);
+      for (let i = 0; i < 10; i++) {
+        const next = (i + 1) % 10;
+        doc.triangle(cx, cy, pts[i][0], pts[i][1], pts[next][0], pts[next][1], 'F');
+      }
+    }
+
     async function downloadOfficialPDF() {
       // Recharger les données en direct depuis Supabase avant génération
       await loadAllData();
@@ -821,16 +847,30 @@
       const calc = calculate();
 
       doc.setFillColor(0, 104, 55);
-      doc.rect(0, 0, 210, 22, 'F');
+      doc.rect(0, 0, 210, 26, 'F');
       doc.setFillColor(193, 39, 45);
-      doc.rect(0, 22, 210, 2, 'F');
+      doc.rect(0, 26, 210, 1.5, 'F');
+
+      // Tenter d'ajouter l'image du logo Pastef si présente dans la page
+      try {
+        const logoImg = document.querySelector('header img, nav img');
+        if (logoImg && logoImg.src) {
+          doc.addImage(logoImg.src, 'PNG', 12, 3, 20, 20);
+        }
+      } catch (e) {
+        console.warn('Logo Pastef non intégré au PDF:', e);
+      }
+
+      // Drapeaux du Sénégal à côté de RÉPUBLIQUE DU SÉNÉGAL
+      drawSenegalFlagPDF(doc, 48, 5.5, 12, 8);
+      drawSenegalFlagPDF(doc, 150, 5.5, 12, 8);
 
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(13);
       doc.setFont('helvetica', 'bold');
-      doc.text('RÉPUBLIQUE DU SÉNÉGAL — PATRIOTES DU SÉNÉGAL (PASTEF)', 105, 9, { align: 'center' });
-      doc.setFontSize(10);
-      doc.text('PASTEF KEUR MASSAR NORD', 105, 17, { align: 'center' });
+      doc.text('RÉPUBLIQUE DU SÉNÉGAL', 105, 11, { align: 'center' });
+      doc.setFontSize(10.5);
+      doc.text('PASTEF KEUR MASSAR NORD', 105, 19, { align: 'center' });
 
       doc.setTextColor(30, 41, 59);
       doc.setFontSize(14);
