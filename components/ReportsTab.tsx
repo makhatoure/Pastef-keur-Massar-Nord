@@ -36,6 +36,12 @@ export default function ReportsTab({
   const [msg, setMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   const isAdmin = currentUser?.role === 'ADMIN';
+  const [stock, setStock] = useState<any>(propStock || { isClosed: false });
+
+  // Synchroniser stock si propStock change
+  React.useEffect(() => {
+    if (propStock) setStock(propStock);
+  }, [propStock]);
 
   // Fonction pour extraire l'état réel et exact directement de Supabase
   const getFreshReportData = async () => {
