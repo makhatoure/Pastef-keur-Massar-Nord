@@ -42,7 +42,7 @@ const INITIAL_DB: AppDatabase = {
 // Fonctions synchronisées avec Supabase
 export async function getSupabaseState() {
   try {
-    const [resStock, resEntries, resMorn, resEve, resLogs, resUsers] = await Promise.all([
+    const results = await Promise.allSettled([
       supabase.from('stock_state').select('*').eq('id', 1).single(),
       supabase.from('stock_entries').select('*').order('created_at', { ascending: false }),
       supabase.from('morning_donations').select('*').order('created_at', { ascending: false }),
@@ -50,6 +50,13 @@ export async function getSupabaseState() {
       supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(100),
       supabase.from('users').select('*'),
     ]);
+
+    const resStock: any = results[0].status === 'fulfilled' ? results[0].value : { data: null };
+    const resEntries: any = results[1].status === 'fulfilled' ? results[1].value : { data: [] };
+    const resMorn: any = results[2].status === 'fulfilled' ? results[2].value : { data: [] };
+    const resEve: any = results[3].status === 'fulfilled' ? results[3].value : { data: [] };
+    const resLogs: any = results[4].status === 'fulfilled' ? results[4].value : { data: [] };
+    const resUsers: any = results[5].status === 'fulfilled' ? results[5].value : { data: [] };
 
     const initial = resStock.data?.initial_stock ?? 500;
     const entriesTotal = (resEntries.data || []).reduce((s: number, e: any) => s + (Number(e.quantity) || 0), 0);

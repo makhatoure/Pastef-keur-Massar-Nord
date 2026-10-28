@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       donation: inserted,
-      message: `Enregistrement réussi. 2 moustiquaires remises à ${fullName.trim()}.`,
+      message: `Enregistrement réussi. 2 moustiquaires remises à ${safeName}.`,
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
