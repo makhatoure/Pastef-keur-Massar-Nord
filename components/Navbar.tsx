@@ -35,7 +35,7 @@ export default function Navbar({
           />
           <div className="min-w-0">
             <h1 className="text-xs sm:text-sm font-black text-slate-900 leading-tight">
-              Cellule Pastef
+              Pastef keur Massar nord
             </h1>
             <p className="text-[10px] sm:text-xs text-slate-600 font-medium leading-tight truncate">
               Serigne Mansour Sy 1 · Darou Salam 2 Ext.
