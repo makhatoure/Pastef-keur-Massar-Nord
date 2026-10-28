@@ -333,6 +333,19 @@
           <p class="text-xs text-slate-500 mt-0.5">Verrouiller toutes les opérations en fin d'activité.</p>
         </button>
       </div>
+
+      <!-- Journal d'historique des mouvements de stock & d'audit -->
+      <div class="bg-white rounded-3xl border border-slate-200 p-4 shadow-xs space-y-2">
+        <div class="flex items-center justify-between pb-1 border-b border-slate-100">
+          <h3 class="text-xs font-black uppercase text-slate-700 flex items-center gap-1.5">
+            <span>📜</span> Journal d'Historique des Mouvements (-2 Moustiquaires & Entrées)
+          </h3>
+          <span id="auditCountBadge" class="text-[11px] font-bold text-slate-400"></span>
+        </div>
+        <div id="adminAuditLogsContainer" class="space-y-2 max-h-64 overflow-y-auto pr-1 text-xs">
+          <p class="text-slate-400 italic py-2 text-center">Aucun mouvement enregistré pour le moment.</p>
+        </div>
+      </div>
     </div>
   </main>
 
@@ -516,7 +529,7 @@
         ];
         statsNeighContainer.innerHTML = quarters.map(q => {
           const mornCount = morningDonations.filter(d => (d.neighborhood || '').includes(q) || (q === 'Serigne Mansour Sy 1' && (d.neighborhood || '').includes('S.M.SY 1'))).length;
-          const eveServed = eveningBeneficiaries.filter(b => ((b.neighborhood || '').includes(q) || (q === 'Serigne Mansour Sy 1' && (b.neighborhood || '').includes('S.M.SY 1'))) && b.status === 'SERVI').length;
+          const eveServed = eveningBeneficiaries.filter(b => b.status === 'SERVI' && ((b.neighborhood || '').includes(q) || (q === 'Serigne Mansour Sy 1' && (b.neighborhood || '').includes('S.M.SY 1')))).length;
           const eveTotal = eveningBeneficiaries.filter(b => (b.neighborhood || '').includes(q) || (q === 'Serigne Mansour Sy 1' && (b.neighborhood || '').includes('S.M.SY 1'))).length;
           return `
             <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
@@ -547,6 +560,24 @@
             </span>
           </div>
         `).join('') : '<p class="text-slate-400 italic py-2 text-center">Aucun don enregistré.</p>';
+      }
+
+      // Journal d'historique des mouvements & d'audit
+      const auditContainer = document.getElementById('adminAuditLogsContainer');
+      const auditBadge = document.getElementById('auditCountBadge');
+      if (auditBadge) auditBadge.innerText = `${auditLogs.length} mouvement(s)`;
+      if (auditContainer) {
+        auditContainer.innerHTML = auditLogs.length ? auditLogs.map(l => `
+          <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-start justify-between gap-2 text-xs">
+            <div>
+              <div class="font-bold text-slate-800">${l.details || l.action}</div>
+              <div class="text-[10px] text-slate-400 mt-0.5">Par ${l.user_name || 'Système'} · ${new Date(l.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</div>
+            </div>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${l.action?.includes('MATIN') ? 'bg-rose-100 text-rose-700' : (l.action?.includes('SOIR') ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700')}">
+              ${l.action}
+            </span>
+          </div>
+        `).join('') : '<p class="text-slate-400 italic py-2 text-center">Aucun mouvement enregistré pour le moment.</p>';
       }
 
       renderEveningList();
@@ -580,20 +611,29 @@
 
       // Ajout immédiat en mémoire locale pour affichage instantané à l'écran
       if (data) {
-        morningDonations.unshift(data);
+        // Éviter les doublons dans l'état local
+        morningDonations = [data, ...morningDonations.filter(d => d.id !== data.id)];
         renderAll();
       }
 
-      await db.from('audit_logs').insert([{
-        user_name: currentUser?.name || 'Agent',
-        action: 'REMISE_MATIN',
-        details: `Sortie stock : -2 moustiquaires | Don de sang : ${name} (📞 ${phone}, Quartier: ${neighborhood})`
-      }]);
+      try {
+        await db.from('audit_logs').insert([{
+          user_name: currentUser?.name || 'Agent',
+          action: 'REMISE_MATIN',
+          details: `Sortie stock : -2 moustiquaires | Don de sang : ${name} (📞 ${phone}, Quartier: ${neighborhood})`
+        }]);
+      } catch (logErr) {
+        console.warn('Audit log write error:', logErr);
+      }
 
       document.getElementById('mornName').value = '';
       document.getElementById('mornPhone').value = '';
+      
+      // Feedback visuel ou confirmation sans écraser le tableau local
       alert(`Remise confirmée ! 2 moustiquaires remises à ${name}.`);
-      await loadAllData();
+      
+      // Recharger les données globales proprement
+      setTimeout(loadAllData, 1000);
     }
 
     // Liste Soir
