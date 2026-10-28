@@ -32,6 +32,13 @@ export default function MorningTab({
   isClosed,
   onRefresh,
 }: MorningTabProps) {
+  // Liste locale synchronisée pour affichage immédiat
+  const [localDonations, setLocalDonations] = useState<MorningDonation[]>(donations);
+
+  React.useEffect(() => {
+    setLocalDonations(donations);
+  }, [donations]);
+
   // Formulaire de saisie
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
@@ -116,6 +123,21 @@ export default function MorningTab({
         setErrorMsg(data.message || 'Erreur lors de l\'enregistrement.');
         setConfirmModalData(null);
       } else {
+        // Injection immédiate dans l'état local pour affichage instantané
+        if (data.donation) {
+          const newEntry: MorningDonation = {
+            id: data.donation.id || String(Date.now()),
+            fullName: data.donation.full_name,
+            phone: data.donation.phone,
+            neighborhood: data.donation.neighborhood,
+            quantity: data.donation.quantity || 2,
+            date: data.donation.created_at || new Date().toISOString(),
+            agent: data.donation.agent || currentUser?.name || 'Agent',
+            confirmed: true,
+          };
+          setLocalDonations(prev => [newEntry, ...prev.filter(d => d.id !== newEntry.id)]);
+        }
+
         setSuccessMsg(data.message);
         setFullName('');
         setPhone('');
@@ -169,7 +191,7 @@ export default function MorningTab({
   };
 
   // Filtrage et recherche rapide
-  const filteredDonations = donations.filter(item => {
+  const filteredDonations = localDonations.filter(item => {
     const nameMatch = (item.fullName || '').toLowerCase().includes(searchTerm.toLowerCase());
     const phoneMatch = (item.phone || '').includes(searchTerm);
     const matchesSearch = !searchTerm || nameMatch || phoneMatch;
@@ -305,10 +327,10 @@ export default function MorningTab({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-3">
           <div className="flex items-center gap-2">
             <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-              Donneurs Enregistrés ({filteredDonations.length} / {donations.length})
+              Donneurs Enregistrés ({filteredDonations.length} / {localDonations.length})
             </h3>
             <span className="text-[11px] bg-teal-100 text-teal-800 font-bold px-2 py-0.5 rounded-full">
-              {donations.length * 2} moustiquaires remises
+              {localDonations.length * 2} moustiquaires remises
             </span>
           </div>
 

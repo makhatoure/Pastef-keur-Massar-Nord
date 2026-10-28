@@ -55,11 +55,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: error.message }, { status: 500 });
     }
 
-    // Log d'audit Supabase
+    // Log d'audit Supabase avec mention explicite du mouvement de stock (-2 moustiquaires)
     await supabase.from('audit_logs').insert([{
       user_name: agentName || 'Agent Matin',
       action: 'REMISE_MATIN',
-      details: `Remise de 2 moustiquaires à ${safeName} (${safePhone}, Quartier: ${safeNeighborhood})`,
+      details: `Sortie stock : -2 moustiquaires | Don de sang : ${safeName} (📞 ${safePhone}, Quartier: ${safeNeighborhood})`,
     }]);
 
     return NextResponse.json({

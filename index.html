@@ -587,7 +587,7 @@
       await db.from('audit_logs').insert([{
         user_name: currentUser?.name || 'Agent',
         action: 'REMISE_MATIN',
-        details: `Don de sang : 2 moustiquaires à ${name} (${phone}) - Quartier: ${neighborhood}`
+        details: `Sortie stock : -2 moustiquaires | Don de sang : ${name} (📞 ${phone}, Quartier: ${neighborhood})`
       }]);
 
       document.getElementById('mornName').value = '';
