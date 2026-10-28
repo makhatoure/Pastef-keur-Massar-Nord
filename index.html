@@ -376,6 +376,15 @@
       document.getElementById('btn-login-admin').className = user === 'admin' ? 'p-3 rounded-2xl border-2 border-pastef-green bg-pastef-lightGreen text-left text-xs font-black text-pastef-darkGreen shadow-xs' : 'p-3 rounded-2xl border border-slate-200 bg-slate-50 text-left text-xs font-bold text-slate-700';
     }
 
+    function logout() {
+      localStorage.removeItem('pastef_user');
+      currentUser = null;
+      morningDonations = [];
+      eveningBeneficiaries = [];
+      auditLogs = [];
+      document.getElementById('loginModal').classList.remove('hidden');
+    }
+
     async function handleLoginSubmit(e) {
       e.preventDefault();
       const u = document.getElementById('loginUsername').value.trim();
@@ -393,7 +402,8 @@
       localStorage.setItem('pastef_user', JSON.stringify(data));
       applyUserRole();
       document.getElementById('loginModal').classList.add('hidden');
-      loadAllData();
+      switchCircuit(data.role === 'ADMIN' ? 'stats' : 'morning');
+      await loadAllData();
     }
 
     function applyUserRole() {
@@ -414,12 +424,6 @@
         adminTabBtn.classList.add('hidden');
         roleSubtitle.innerText = 'Agent';
       }
-    }
-
-    function logout() {
-      localStorage.removeItem('pastef_user');
-      currentUser = null;
-      document.getElementById('loginModal').classList.remove('hidden');
     }
 
     function switchCircuit(circuit) {
@@ -838,6 +842,7 @@
       try {
         currentUser = JSON.parse(saved);
         applyUserRole();
+        switchCircuit(currentUser.role === 'ADMIN' ? 'stats' : 'morning');
         document.getElementById('loginModal').classList.add('hidden');
         loadAllData();
       } catch (e) {
