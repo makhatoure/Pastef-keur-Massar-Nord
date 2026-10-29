@@ -2,9 +2,12 @@
 
 import React, { useState } from 'react';
 import { EveningBeneficiary, User } from '@/lib/types';
-import { Users, UserPlus, Search, CheckCircle, Clock, AlertCircle, Phone, MapPin, UserCheck, ShieldAlert, Edit, PlusCircle, Filter } from 'lucide-react';
+import { Users, UserPlus, Search, CheckCircle, Clock, AlertCircle, Phone, MapPin, UserCheck, ShieldAlert, Edit, PlusCircle, Filter, X, Zap } from 'lucide-react';
 
 import { supabaseClient } from '@/lib/supabase-client';
+import { PRESET_NEIGHBORHOODS, NEIGHBORHOOD_CHIEFS, DEFAULT_EVENING_QTY } from '@/lib/constants';
+
+export const EVENING_CHIEFS = NEIGHBORHOOD_CHIEFS;
 
 interface EveningTabProps {
   beneficiaries: EveningBeneficiary[];
@@ -14,19 +17,6 @@ interface EveningTabProps {
   defaultQty: number;
   onRefresh: () => void;
 }
-
-const PRESET_NEIGHBORHOODS = [
-  'Serigne Mansour Sy 1',
-  'Darou Salam 2 Extension',
-  'Serigne Mansour Sy 2',
-  'Autre quartier',
-];
-
-export const EVENING_CHIEFS: Record<string, string> = {
-  'Serigne Mansour Sy 1': 'Maodo Ka',
-  'Darou Salam 2 Extension': '',
-  'Serigne Mansour Sy 2': '',
-};
 
 export default function EveningTab({
   beneficiaries: propBeneficiaries,
@@ -168,6 +158,45 @@ export default function EveningTab({
       } else {
         setSuccessMsg(data.message);
         setServingBeneficiary(null);
+        fetchLiveBeneficiaries();
+        onRefresh();
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Erreur réseau');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Distribution rapide en 1 clic (2 moustiquaires par défaut)
+  const handleQuickServe = async (beneficiary: EveningBeneficiary) => {
+    if (isClosed) return;
+    const qty = defaultQty || 2;
+    if (qty > remainingStock) {
+      setErrorMsg(`Stock insuffisant ! Disponible: ${remainingStock}, demandé: ${qty}`);
+      return;
+    }
+
+    setLoading(true);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    try {
+      const res = await fetch('/api/evening', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: beneficiary.id,
+          quantity: qty,
+          agentName: currentUser?.name || 'Agent Podium',
+        }),
+      });
+
+      const data = await res.json();
+      if (!data.success) {
+        setErrorMsg(data.message || 'Erreur lors de la distribution.');
+      } else {
+        setSuccessMsg(`✓ ${beneficiary.fullName} servi (${qty} moustiquaires)`);
         fetchLiveBeneficiaries();
         onRefresh();
       }
@@ -404,16 +433,25 @@ export default function EveningTab({
           </h3>
         </div>
 
-        {/* Champ de recherche avec loupe */}
+        {/* Champ de recherche avec loupe et bouton effacer */}
         <div className="relative">
           <input
             type="text"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             placeholder="Tapez le nom ou le numéro de téléphone..."
-            className="w-full pl-9 pr-3 py-2.5 text-sm border-2 border-blue-200 rounded-xl focus:border-blue-600 focus:outline-none shadow-xs font-medium"
+            className="w-full pl-9 pr-10 py-2.5 text-sm border-2 border-blue-200 rounded-xl focus:border-blue-600 focus:outline-none shadow-xs font-medium"
           />
           <Search className="w-5 h-5 text-blue-600 absolute left-2.5 top-2.5" />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-2.5 top-2.5 p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+              title="Effacer la recherche"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         {/* Filtres par statut et quartier */}
@@ -512,17 +550,31 @@ export default function EveningTab({
                   {/* Boutons d'action */}
                   <div className="flex items-center gap-1.5 self-end sm:self-center">
                     {!isServed ? (
-                      <button
-                        disabled={isClosed}
-                        onClick={() => {
-                          setServingBeneficiary(item);
-                          setQuantityToGive(defaultQty || 2);
-                        }}
-                        className="px-3.5 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm disabled:opacity-50"
-                      >
-                        <CheckCircle className="w-4 h-4" />
-                        <span>Servir au podium</span>
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        {/* Bouton rapide 1-clic */}
+                        <button
+                          disabled={isClosed || loading}
+                          onClick={() => handleQuickServe(item)}
+                          title={`Servir directement ${defaultQty || 2} moustiquaires`}
+                          className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shadow-sm disabled:opacity-50"
+                        >
+                          <Zap className="w-3.5 h-3.5" />
+                          <span>Servir ({defaultQty || 2})</span>
+                        </button>
+                        {/* Bouton choix quantité personnalisé */}
+                        <button
+                          disabled={isClosed || loading}
+                          onClick={() => {
+                            setServingBeneficiary(item);
+                            setQuantityToGive(defaultQty || 2);
+                          }}
+                          title="Modifier la quantité ou vérifier avant de servir"
+                          className="px-2.5 py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-xl text-xs font-semibold transition flex items-center gap-1 disabled:opacity-50"
+                        >
+                          <CheckCircle className="w-3.5 h-3.5" />
+                          <span>Autre</span>
+                        </button>
+                      </div>
                     ) : (
                       <div className="text-[11px] font-bold text-slate-400 flex items-center gap-1 bg-slate-100 px-2 py-1 rounded-lg">
                         <span>Déjà servi</span>

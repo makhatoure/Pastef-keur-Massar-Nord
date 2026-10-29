@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { MorningDonation, User } from '@/lib/types';
-import { HeartHandshake, Search, CheckCircle2, AlertTriangle, Clock, MapPin, Phone, Edit3, ShieldAlert } from 'lucide-react';
+import { HeartHandshake, Search, CheckCircle2, AlertTriangle, Clock, MapPin, Phone, Edit3, ShieldAlert, X } from 'lucide-react';
 
 // IMPORTANT : utiliser supabaseClient (lib/supabase-client.ts) et NON lib/db.ts
 // lib/db.ts contient des imports Node.js (fs, path, os) qui crashent côté navigateur
 import { supabaseClient } from '@/lib/supabase-client';
+import { PRESET_NEIGHBORHOODS, NEIGHBORHOOD_CHIEFS } from '@/lib/constants';
 
 interface MorningTabProps {
   donations: MorningDonation[];
@@ -15,19 +16,6 @@ interface MorningTabProps {
   isClosed: boolean;
   onRefresh: () => void;
 }
-
-const PRESET_NEIGHBORHOODS = [
-  'Serigne Mansour Sy 1',
-  'Darou Salam 2 Extension',
-  'Serigne Mansour Sy 2',
-  'Autre quartier',
-];
-
-export const NEIGHBORHOOD_CHIEFS: Record<string, string> = {
-  'Serigne Mansour Sy 1': 'Maodo Ka',
-  'Darou Salam 2 Extension': '',
-  'Serigne Mansour Sy 2': '',
-};
 
 export default function MorningTab({
   donations,
@@ -388,16 +376,25 @@ export default function MorningTab({
           </select>
         </div>
 
-        {/* Barre de recherche rapide */}
+        {/* Barre de recherche rapide avec bouton effacer */}
         <div className="relative mb-3">
           <input
             type="text"
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             placeholder="Rechercher par nom ou numéro de téléphone..."
-            className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-600 focus:outline-none"
+            className="w-full pl-9 pr-9 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-600 focus:outline-none"
           />
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-2.5 top-2 p-1 rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+              title="Effacer la recherche"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
         {/* Tableau / Liste mobile */}
