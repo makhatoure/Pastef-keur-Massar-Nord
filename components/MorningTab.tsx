@@ -109,32 +109,14 @@ export default function MorningTab({
       if (!data.success) {
         setErrorMsg(data.message || 'Erreur lors de l\'enregistrement.');
         setConfirmModalData(null);
-      } else {
-        // Injection immédiate dans l'état local pour affichage instantané
-        if (data.donation) {
-          const newEntry: MorningDonation = {
-            id: data.donation.id || String(Date.now()),
-            fullName: data.donation.full_name,
-            phone: data.donation.phone,
-            neighborhood: data.donation.neighborhood,
-            quantity: data.donation.quantity || 2,
-            date: data.donation.created_at || new Date().toISOString(),
-            agent: data.donation.agent || currentUser?.name || 'Agent',
-            confirmed: true,
-          };
-          setLocalDonations(prev => [newEntry, ...prev.filter(d => d.id !== newEntry.id)]);
-        }
-
         setSuccessMsg(data.message);
         setFullName('');
         setPhone('');
         setCustomNeighborhood('');
         setConfirmModalData(null);
         
-        // Rechargement immédiat et complet de la table morning_donations depuis Supabase
-        await fetchDonationsFromSupabase();
         if (onRefresh) {
-          await onRefresh();
+          onRefresh();
         }
       }
     } catch (err: any) {
