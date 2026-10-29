@@ -16,7 +16,7 @@ const DB_FILE = path.join(DATA_DIR, 'db.json');
 
 const INITIAL_DB: AppDatabase = {
   stock: {
-    initialStock: 500,
+    initialStock: 800,
     entries: [],
     isClosed: false,
   },

@@ -21,12 +21,12 @@ export default function Home() {
 
   // Données de l'application
   const [stock, setStock] = useState<any>({
-    initial: 500,
+    initial: 800,
     entriesTotal: 0,
     morningDistributed: 0,
     eveningDistributed: 0,
     totalDistributed: 0,
-    remaining: 500,
+    remaining: 800,
     isClosed: false,
     entries: [],
   });
