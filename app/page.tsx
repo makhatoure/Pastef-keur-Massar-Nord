@@ -51,10 +51,13 @@ export default function Home() {
     }
   }, []);
 
-  // Fonction de rechargement des données de la plateforme
+  // Fonction de rechargement des données de la plateforme (Strict No-Cache)
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch('/api/state', { cache: 'no-store' });
+      const res = await fetch(`/api/state?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' }
+      });
       const data = await res.json();
       if (data.success) {
         setStock(data.stock);

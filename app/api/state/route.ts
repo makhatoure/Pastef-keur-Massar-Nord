@@ -2,6 +2,14 @@ import { NextResponse } from 'next/server';
 import { getSupabaseState, getDatabase, calculateStock } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
+
+const NO_CACHE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+  'Pragma': 'no-cache',
+  'Expires': '0',
+};
 
 export async function GET() {
   try {
@@ -59,6 +67,8 @@ export async function GET() {
         auditLogs: supabaseData.auditLogs,
         users: supabaseData.users,
         defaultEveningQty: supabaseData.defaultEveningQty,
+      }, {
+        headers: NO_CACHE_HEADERS,
       });
     }
 
