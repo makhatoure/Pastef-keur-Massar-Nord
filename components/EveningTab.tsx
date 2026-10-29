@@ -38,6 +38,8 @@ export default function EveningTab({
   const [showAddModal, setShowAddModal] = useState(false);
   const [isBulkMode, setIsBulkMode] = useState(false);
   const [bulkText, setBulkText] = useState('');
+  const [bulkNeighborhood, setBulkNeighborhood] = useState('Serigne Mansour Sy 1');
+  const [bulkChief, setBulkChief] = useState('Maodo Ka');
   const [singleName, setSingleName] = useState('');
   const [singlePhone, setSinglePhone] = useState('');
   const [singleNeighborhood, setSingleNeighborhood] = useState('Serigne Mansour Sy 1');
@@ -167,15 +169,24 @@ export default function EveningTab({
       let payload: any = { adminName: currentUser?.name || 'Administrateur' };
 
       if (isBulkMode) {
-        // Lignes formatées : Nom, Téléphone, Quartier, Chef
-        const lines = bulkText.split('\n').filter(l => l.trim().length > 0);
+        // Saisie groupée simplifiée : 1 ligne = 1 Nom et Prénom
+        // Optionnel : si l'utilisateur met une virgule, prend le téléphone en 2e élément
+        const lines = bulkText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
         const beneficiariesList = lines.map(line => {
-          const parts = line.split(',').map(p => p.trim());
+          let name = line;
+          let phone = 'Non renseigné';
+
+          if (line.includes(',')) {
+            const parts = line.split(',').map(p => p.trim());
+            name = parts[0] || 'Bénéficiaire sans nom';
+            phone = parts[1] || 'Non renseigné';
+          }
+
           return {
-            fullName: parts[0] || 'Bénéficiaire sans nom',
-            phone: parts[1] || 'Non renseigné',
-            neighborhood: parts[2] || 'Serigne Mansour Sy 1',
-            originChiefOrList: parts[3] || 'Liste Chef de quartier',
+            fullName: name,
+            phone: phone,
+            neighborhood: bulkNeighborhood || 'Serigne Mansour Sy 1',
+            originChiefOrList: bulkChief.trim() || `Liste ${bulkNeighborhood}`,
           };
         });
         payload.beneficiaries = beneficiariesList;
@@ -710,21 +721,58 @@ export default function EveningTab({
                   </div>
                 </>
               ) : (
-                <div>
-                  <label className="block font-medium text-slate-700 mb-1">
-                    Collez les bénéficiaires (1 par ligne : Nom, Téléphone, Quartier, Chef) :
-                  </label>
-                  <textarea
-                    rows={6}
-                    required
-                    value={bulkText}
-                    onChange={e => setBulkText(e.target.value)}
-                    placeholder="Moussa Ba, 771112233, S.M.SY 1, Chef Ba&#10;Awa Diop, 782223344, D.S.2.E, Chef Diop"
-                    className="w-full p-2 border border-slate-300 rounded-lg font-mono text-xs"
-                  />
-                  <p className="text-[10px] text-slate-500 mt-1">
-                    Séparer chaque champ par une virgule. Les doublons seront automatiquement détectés et signalés.
-                  </p>
+                <div className="space-y-2.5">
+                  <div className="grid grid-cols-2 gap-2 bg-blue-50/60 p-2.5 rounded-xl border border-blue-200">
+                    <div>
+                      <label className="block font-bold text-blue-900 mb-1">Quartier pour toute la liste *</label>
+                      <select
+                        value={bulkNeighborhood}
+                        onChange={e => {
+                          const q = e.target.value;
+                          setBulkNeighborhood(q);
+                          if (NEIGHBORHOOD_CHIEFS[q] !== undefined) {
+                            setBulkChief(NEIGHBORHOOD_CHIEFS[q] ? `Chef: ${NEIGHBORHOOD_CHIEFS[q]}` : `Liste ${q}`);
+                          }
+                        }}
+                        className="w-full px-2 py-1.5 border border-blue-300 rounded-lg text-xs bg-white font-semibold text-slate-800"
+                      >
+                        {PRESET_NEIGHBORHOODS.map(q => (
+                          <option key={q} value={q}>{q}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-blue-900 mb-1">Origine / Chef de quartier</label>
+                      <input
+                        type="text"
+                        value={bulkChief}
+                        onChange={e => setBulkChief(e.target.value)}
+                        placeholder="ex: Maodo Ka"
+                        className="w-full px-2 py-1.5 border border-blue-300 rounded-lg text-xs bg-white font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-medium text-slate-700 mb-1">
+                      Collez vos noms (1 personne par ligne) :
+                    </label>
+                    <textarea
+                      rows={7}
+                      required
+                      value={bulkText}
+                      onChange={e => setBulkText(e.target.value)}
+                      placeholder="Moussa Ba&#10;Awa Diop&#10;Ousmane Sonko&#10;Mariama Sarr&#10;Fatou Binetou Ndiaye"
+                      className="w-full p-2.5 border border-slate-300 rounded-xl font-sans text-xs leading-relaxed focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                    />
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 mt-1">
+                      <span>💡 1 ligne = 1 Nom et Prénom. Le quartier ci-dessus leur sera attribué à tous.</span>
+                      <span className="font-bold text-blue-700">
+                        {bulkText.split('\n').filter(l => l.trim().length > 0).length} nom(s) détecté(s)
+                      </span>
+                    </div>
+                  </div>
                 </div>
               )}
 
