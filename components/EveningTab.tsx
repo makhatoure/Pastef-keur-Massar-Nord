@@ -201,7 +201,6 @@ export default function EveningTab({
         setBulkText('');
         setSingleName('');
         setSinglePhone('');
-        fetchLiveBeneficiaries();
         onRefresh();
       } else {
         setErrorMsg(data.message || 'Erreur lors de l\'enregistrement.');
