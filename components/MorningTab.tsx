@@ -24,44 +24,7 @@ export default function MorningTab({
   isClosed,
   onRefresh,
 }: MorningTabProps) {
-  // Gestion d'état React : commence vide → useEffect charge depuis Supabase au montage
-  const [localDonations, setLocalDonations] = useState<MorningDonation[]>([]);
-
-  // Fonction de lecture directe depuis Supabase avec vérification d'erreur
-  const fetchDonationsFromSupabase = async () => {
-    try {
-      const { data, error } = await supabaseClient
-        .from('morning_donations')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error("Erreur Supabase :", error);
-        return;
-      }
-
-      if (data) {
-        const mapped: MorningDonation[] = data.map((d: any) => ({
-          id: d.id,
-          fullName: d.full_name,
-          phone: d.phone,
-          neighborhood: d.neighborhood,
-          quantity: d.quantity || 2,
-          date: d.created_at,
-          agent: d.agent,
-          confirmed: true,
-        }));
-        setLocalDonations(mapped);
-      }
-    } catch (err) {
-      console.error("Erreur chargement Supabase:", err);
-    }
-  };
-
-  // Au montage du composant : charge depuis Supabase (seule source de vérité)
-  useEffect(() => {
-    fetchDonationsFromSupabase();
-  }, []);
+  const localDonations = donations || [];
 
   // Formulaire de saisie
   const [fullName, setFullName] = useState('');

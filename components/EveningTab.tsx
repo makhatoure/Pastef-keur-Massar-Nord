@@ -26,57 +26,8 @@ export default function EveningTab({
   defaultQty = 2,
   onRefresh,
 }: EveningTabProps) {
-  // Liste locale synchronisée directement avec Supabase
-  const [localBeneficiaries, setLocalBeneficiaries] = React.useState<EveningBeneficiary[]>(propBeneficiaries || []);
-
-  const fetchLiveBeneficiaries = React.useCallback(async () => {
-    try {
-      const { data, error } = await supabaseClient
-        .from('evening_beneficiaries')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (!error && data) {
-        const mapped: EveningBeneficiary[] = data.map((b: any) => ({
-          id: b.id,
-          fullName: b.full_name,
-          phone: b.phone,
-          neighborhood: b.neighborhood,
-          originChiefOrList: b.origin_chief_or_list,
-          status: b.status,
-          quantityGiven: b.quantity_given || 0,
-          createdAt: b.created_at,
-          createdBy: b.created_by,
-          servedAt: b.served_at,
-          servedBy: b.served_by,
-          isExceptionalAdd: Boolean(b.is_exceptional_add),
-        }));
-        setLocalBeneficiaries(mapped);
-      }
-    } catch (e) {
-      console.error('Erreur chargement podium live:', e);
-    }
-  }, []);
-
-  // Chargement immédiat au montage et synchronisation
-  React.useEffect(() => {
-    fetchLiveBeneficiaries();
-  }, [fetchLiveBeneficiaries]);
-
-  // Si le parent passe une liste mise à jour (y compris vide après reset)
-  React.useEffect(() => {
-    if (propBeneficiaries) {
-      setLocalBeneficiaries(propBeneficiaries);
-    }
-  }, [propBeneficiaries]);
-
-  // Auto-refresh silencieux toutes les 4s au podium
-  React.useEffect(() => {
-    const timer = setInterval(fetchLiveBeneficiaries, 4000);
-    return () => clearInterval(timer);
-  }, [fetchLiveBeneficiaries]);
-
-  const beneficiaries = localBeneficiaries;
+  // La liste des bénéficiaires provient directement de la source de vérité globale
+  const beneficiaries = propBeneficiaries || [];
 
   // États de recherche et filtrage
   const [searchTerm, setSearchTerm] = useState('');
@@ -159,7 +110,6 @@ export default function EveningTab({
       } else {
         setSuccessMsg(data.message);
         setServingBeneficiary(null);
-        fetchLiveBeneficiaries();
         onRefresh();
       }
     } catch (err: any) {
@@ -198,7 +148,6 @@ export default function EveningTab({
         setErrorMsg(data.message || 'Erreur lors de la distribution.');
       } else {
         setSuccessMsg(`✓ ${beneficiary.fullName} servi (${qty} moustiquaires)`);
-        fetchLiveBeneficiaries();
         onRefresh();
       }
     } catch (err: any) {
@@ -338,7 +287,6 @@ export default function EveningTab({
         setSuccessMsg(data.message || 'Fiche mise à jour et tracée dans le journal.');
         setEditingBeneficiary(null);
         setEditReason('');
-        fetchLiveBeneficiaries();
         onRefresh();
       } else {
         setErrorMsg(data.message || 'Erreur modification');
