@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { User, AuditLog } from '@/lib/types';
-import { Shield, Users, History, KeyRound, Search, Clock, FileText } from 'lucide-react';
+import { Shield, Users, History, KeyRound, Search, Clock, FileText, AlertTriangle, Trash2, Loader2 } from 'lucide-react';
 
 interface AdminTabProps {
   users: Omit<User, 'pin'>[];
@@ -19,6 +19,39 @@ export default function AdminTab({
 }: AdminTabProps) {
   const [searchAudit, setSearchAudit] = useState('');
   const [filterAction, setFilterAction] = useState('ALL');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetMsg, setResetMsg] = useState<string | null>(null);
+
+  const handleTotalReset = async () => {
+    const confirmation = window.confirm(
+      "ATTENTION ZONE DANGER :\n\nÊtes-vous absolument sûr de vouloir réinitialiser TOUS les compteurs, vider les données de test et remettre le stock à 800 ?"
+    );
+    if (!confirmation) return;
+
+    setResetLoading(true);
+    setResetMsg(null);
+    try {
+      const res = await fetch('/api/admin/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          adminName: currentUser?.name || 'Administrateur',
+          initialStock: 800,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setResetMsg(data.message);
+        onRefresh();
+      } else {
+        alert("Erreur lors de la réinitialisation : " + data.message);
+      }
+    } catch (err: any) {
+      alert("Erreur réseau : " + err.message);
+    } finally {
+      setResetLoading(false);
+    }
+  };
 
   const filteredLogs = auditLogs.filter(log => {
     const matchesSearch =
@@ -80,6 +113,45 @@ export default function AdminTab({
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Zone Danger : Remise à Zéro des Données de Test */}
+      <div className="bg-rose-50/70 rounded-2xl border-2 border-rose-200 p-4 shadow-sm space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 className="text-xs font-bold text-rose-900 uppercase tracking-wider flex items-center gap-1.5">
+              <AlertTriangle className="w-4 h-4 text-rose-600" />
+              Zone Critique : Remise à Zéro Officielle
+            </h3>
+            <p className="text-[11px] text-rose-700 mt-0.5">
+              Efface tous les dons de test, vide la liste du soir et rétablit le stock officiel à <strong>800 moustiquaires</strong>.
+            </p>
+          </div>
+
+          <button
+            onClick={handleTotalReset}
+            disabled={resetLoading}
+            className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50 flex-shrink-0"
+          >
+            {resetLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Nettoyage en cours...</span>
+              </>
+            ) : (
+              <>
+                <Trash2 className="w-4 h-4" />
+                <span>Remettre à Zéro (Stock 800)</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        {resetMsg && (
+          <div className="p-2.5 bg-emerald-100 border border-emerald-300 rounded-xl text-emerald-800 text-xs font-semibold">
+            ✓ {resetMsg}
+          </div>
+        )}
       </div>
 
       {/* Journal d'audit complet */}
