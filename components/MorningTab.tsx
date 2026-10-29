@@ -100,6 +100,27 @@ export default function MorningTab({
     }
   };
 
+  // Suppression ciblée d'un don (Admin uniquement)
+  const handleDeleteDonation = async (id: string, name: string) => {
+    if (!window.confirm(`Supprimer définitivement le don de ${name} ? Cette action est irréversible.`)) return;
+    try {
+      const res = await fetch('/api/morning', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, adminName: currentUser?.name || 'Administrateur' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        onRefresh();
+      } else {
+        alert(data.message || 'Erreur lors de la suppression.');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Erreur réseau');
+    }
+  };
+
+
   // Modification réservée à l'administrateur
   const handleAdminUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -352,19 +373,29 @@ export default function MorningTab({
                   </div>
                 </div>
 
-                {/* Bouton de correction admin */}
+                {/* Boutons admin : Corriger + Supprimer */}
                 {currentUser?.role === 'ADMIN' && (
-                  <button
-                    onClick={() => {
-                      setEditingItem(item);
-                      setEditReason('');
-                    }}
-                    className="self-end sm:self-center px-2 py-1 bg-white border border-slate-300 rounded-lg text-slate-600 hover:text-teal-700 hover:border-teal-400 text-[11px] font-medium flex items-center gap-1 shadow-2xs"
-                  >
-                    <Edit3 className="w-3 h-3" />
-                    <span>Corriger</span>
-                  </button>
+                  <div className="self-end sm:self-center flex items-center gap-1.5">
+                    <button
+                      onClick={() => {
+                        setEditingItem(item);
+                        setEditReason('');
+                      }}
+                      className="px-2 py-1 bg-white border border-slate-300 rounded-lg text-slate-600 hover:text-teal-700 hover:border-teal-400 text-[11px] font-medium flex items-center gap-1 shadow-2xs"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                      <span>Corriger</span>
+                    </button>
+                    <button
+                      onClick={() => handleDeleteDonation(item.id, item.fullName)}
+                      title="Supprimer ce don"
+                      className="p-1.5 bg-red-50 border border-red-200 text-red-500 hover:bg-red-100 hover:text-red-700 rounded-lg transition"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 )}
+
               </div>
             ))}
           </div>

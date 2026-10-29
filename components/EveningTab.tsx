@@ -317,6 +317,26 @@ export default function EveningTab({
     }
   };
 
+  // Suppression ciblée d'un bénéficiaire (Admin uniquement)
+  const handleDeleteBeneficiary = async (id: string, name: string) => {
+    if (!window.confirm(`Supprimer définitivement la fiche de ${name} ? Cette action est irréversible.`)) return;
+    try {
+      const res = await fetch('/api/evening', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, adminName: currentUser?.name || 'Administrateur' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        onRefresh();
+      } else {
+        alert(data.message || 'Erreur lors de la suppression.');
+      }
+    } catch (err: any) {
+      alert(err.message || 'Erreur réseau');
+    }
+  };
+
   return (
     <div className="space-y-4 pb-16">
       {/* En-tête du module */}
@@ -551,16 +571,25 @@ export default function EveningTab({
                     )}
 
                     {currentUser?.role === 'ADMIN' && (
-                      <button
-                        onClick={() => {
-                          setEditingBeneficiary(item);
-                          setEditReason('');
-                        }}
-                        title="Corriger la fiche"
-                        className="p-1.5 bg-slate-100 text-slate-600 hover:text-blue-700 rounded-lg text-xs"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => {
+                            setEditingBeneficiary(item);
+                            setEditReason('');
+                          }}
+                          title="Corriger la fiche"
+                          className="p-1.5 bg-slate-100 text-slate-600 hover:text-blue-700 rounded-lg text-xs"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteBeneficiary(item.id, item.fullName)}
+                          title="Supprimer ce bénéficiaire"
+                          className="p-1.5 bg-red-50 border border-red-200 text-red-500 hover:bg-red-100 hover:text-red-700 rounded-lg text-xs transition"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>

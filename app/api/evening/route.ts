@@ -174,3 +174,49 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
+
+// Suppression ciblée d'un bénéficiaire (Admin uniquement)
+export async function DELETE(request: Request) {
+  try {
+    const body = await request.json();
+    const { id, adminName } = body;
+
+    if (!id) {
+      return NextResponse.json({ success: false, message: 'ID du bénéficiaire manquant.' }, { status: 400 });
+    }
+
+    // Récupérer la fiche avant suppression pour l'audit
+    const { data: existing, error: fetchErr } = await supabase
+      .from('evening_beneficiaries')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchErr || !existing) {
+      return NextResponse.json({ success: false, message: 'Bénéficiaire introuvable.' }, { status: 404 });
+    }
+
+    const { error: deleteErr } = await supabase
+      .from('evening_beneficiaries')
+      .delete()
+      .eq('id', id);
+
+    if (deleteErr) {
+      return NextResponse.json({ success: false, message: deleteErr.message }, { status: 500 });
+    }
+
+    // Traçabilité obligatoire
+    await supabase.from('audit_logs').insert([{
+      user_name: adminName || 'Administrateur',
+      action: 'SUPPRESSION_SOIR',
+      details: `Suppression bénéficiaire podium : ${existing.full_name} (📞 ${existing.phone}, Quartier: ${existing.neighborhood}, Statut: ${existing.status}) — ID: ${id}`,
+    }]);
+
+    return NextResponse.json({
+      success: true,
+      message: `Fiche de ${existing.full_name} supprimée avec succès.`,
+    });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+  }
+}

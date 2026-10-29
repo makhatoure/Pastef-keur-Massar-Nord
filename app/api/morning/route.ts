@@ -71,3 +71,49 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
+
+// Suppression ciblée d'un don (Admin uniquement)
+export async function DELETE(request: Request) {
+  try {
+    const body = await request.json();
+    const { id, adminName } = body;
+
+    if (!id) {
+      return NextResponse.json({ success: false, message: 'ID du don manquant.' }, { status: 400 });
+    }
+
+    // Récupérer le don avant suppression pour l'audit
+    const { data: existing, error: fetchErr } = await supabase
+      .from('morning_donations')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchErr || !existing) {
+      return NextResponse.json({ success: false, message: 'Don introuvable.' }, { status: 404 });
+    }
+
+    const { error: deleteErr } = await supabase
+      .from('morning_donations')
+      .delete()
+      .eq('id', id);
+
+    if (deleteErr) {
+      return NextResponse.json({ success: false, message: deleteErr.message }, { status: 500 });
+    }
+
+    // Traçabilité obligatoire
+    await supabase.from('audit_logs').insert([{
+      user_name: adminName || 'Administrateur',
+      action: 'SUPPRESSION_MATIN',
+      details: `Suppression don de sang : ${existing.full_name} (📞 ${existing.phone}, Quartier: ${existing.neighborhood}) — ID: ${id}`,
+    }]);
+
+    return NextResponse.json({
+      success: true,
+      message: `Don de ${existing.full_name} supprimé avec succès.`,
+    });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+  }
+}
