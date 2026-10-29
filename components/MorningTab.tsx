@@ -40,15 +40,6 @@ export default function MorningTab({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Modale de confirmation de remise
-  const [confirmModalData, setConfirmModalData] = useState<{
-    fullName: string;
-    phone: string;
-    neighborhood: string;
-    chiefName?: string;
-    forceDuplicate?: boolean;
-  } | null>(null);
-
   // Modale d'édition administrative
   const [editingItem, setEditingItem] = useState<MorningDonation | null>(null);
   const [editReason, setEditReason] = useState('');
@@ -62,58 +53,41 @@ export default function MorningTab({
     }
   };
 
-  // Pré-validation du formulaire : AUCUN CHAMP N'EST BLOQUANT
-  const handlePreSubmit = (e: React.FormEvent) => {
+  // Enregistrement direct et instantané du don dès le clic sur le bouton
+  const handleDirectSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isClosed || loading) return;
+
+    setLoading(true);
     setErrorMsg(null);
     setSuccessMsg(null);
 
-    // Ouvrir la modale de confirmation avec des valeurs par défaut si vide
-    setConfirmModalData({
-      fullName: fullName.trim() || 'Donneur anonyme',
-      phone: phone.trim() || 'Non renseigné',
-      neighborhood: targetNeighborhood,
-      chiefName: chiefName.trim(),
-    });
-  };
-
-  // Validation effective côté serveur
-  const executeDonation = async (forceDuplicate = false) => {
-    if (!confirmModalData) return;
-    setLoading(true);
-    setErrorMsg(null);
+    const donationFullName = fullName.trim() || 'Donneur anonyme';
+    const donationPhone = phone.trim() || 'Non renseigné';
+    const donationQuarter = targetNeighborhood;
 
     try {
       const res = await fetch('/api/morning', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fullName: confirmModalData.fullName,
-          phone: confirmModalData.phone,
-          neighborhood: confirmModalData.neighborhood,
-          agentName: currentUser?.name || 'Agent',
-          forceDuplicate,
+          fullName: donationFullName,
+          phone: donationPhone,
+          neighborhood: donationQuarter,
+          agentName: currentUser?.name || 'Agent Matin',
+          forceDuplicate: true, // Ne bloque jamais l'agent sur le terrain
         }),
       });
 
       const data = await res.json();
 
-      if (data.isDuplicateWarning && !forceDuplicate) {
-        // Alerte doublon : demander confirmation forcée si autorisé
-        setErrorMsg(data.message);
-        setConfirmModalData(prev => (prev ? { ...prev, forceDuplicate: true } : null));
-        setLoading(false);
-        return;
-      }
-
       if (!data.success) {
         setErrorMsg(data.message || 'Erreur lors de l\'enregistrement.');
-        setConfirmModalData(null);
-        setSuccessMsg(data.message);
+      } else {
+        setSuccessMsg(`✓ Don enregistré avec succès ! (2 moustiquaires remises à ${donationFullName})`);
         setFullName('');
         setPhone('');
         setCustomNeighborhood('');
-        setConfirmModalData(null);
         
         if (onRefresh) {
           onRefresh();
@@ -211,7 +185,7 @@ export default function MorningTab({
           </div>
         </div>
 
-        <form onSubmit={handlePreSubmit} className="space-y-2.5">
+        <form onSubmit={handleDirectSubmit} className="space-y-2.5">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
               Nom et Prénom <span className="text-slate-400 font-normal">· optionnel</span>
@@ -396,67 +370,6 @@ export default function MorningTab({
           </div>
         )}
       </div>
-
-      {/* Modale de Confirmation OBLIGATOIRE avant déduction du stock */}
-      {confirmModalData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-5 border border-slate-200 space-y-4">
-            <div className="text-center">
-              <div className="w-12 h-12 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center mx-auto mb-2">
-                <CheckCircle2 className="w-7 h-7" />
-              </div>
-              <h4 className="text-base font-bold text-slate-900">Confirmer la remise</h4>
-              <p className="text-xs text-slate-500 mt-1">
-                Le don de sang est-il validé et les 2 moustiquaires ont-elles été remises en main propre ?
-              </p>
-            </div>
-
-            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1.5">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Bénéficiaire :</span>
-                <span className="font-bold text-slate-800">{confirmModalData.fullName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Téléphone :</span>
-                <span className="font-mono font-bold text-slate-800">{confirmModalData.phone}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Quartier :</span>
-                <span className="font-bold text-teal-700">{confirmModalData.neighborhood}</span>
-              </div>
-              <div className="flex justify-between border-t border-slate-200 pt-1.5">
-                <span className="text-slate-500">Quantité :</span>
-                <span className="font-black text-emerald-700">2 moustiquaires</span>
-              </div>
-            </div>
-
-            {confirmModalData.forceDuplicate && (
-              <div className="p-2.5 bg-amber-50 border border-amber-300 rounded-lg text-amber-800 text-[11px] flex items-center gap-1.5">
-                <ShieldAlert className="w-4 h-4 flex-shrink-0 text-amber-600" />
-                <span>Attention : cette personne semble déjà enregistrée. Forcer tout de même ?</span>
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setConfirmModalData(null)}
-                className="py-2.5 px-3 bg-slate-100 text-slate-700 text-xs font-bold rounded-xl hover:bg-slate-200 transition"
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => executeDonation(Boolean(confirmModalData.forceDuplicate))}
-                className="py-2.5 px-3 bg-teal-700 text-white text-xs font-bold rounded-xl hover:bg-teal-800 transition shadow-sm"
-              >
-                {loading ? 'Confirmation...' : 'Oui, Confirmer'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Modale d'Édition Admin avec Motif obligatoire */}
       {editingItem && (
