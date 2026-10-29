@@ -3,7 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Cellule Pastef quartiers: S.M.SY 1/ D.S.2.E</title>
+  <title>Pastef keur Massar nord</title>
+  <!-- PWA Meta Tags -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#006837">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Pastef KMN">
+  <link rel="apple-touch-icon" href="pastef-logo.png">
+  <link rel="icon" type="image/png" href="pastef-logo.png">
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -979,6 +988,62 @@
         loadAllData();
       }
     }, 5000);
+
+    // ================= PWA SERVICE WORKER & INSTALLATION =================
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW err:', err));
+    }
+
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const banner = document.getElementById('pwaInstallBanner');
+      if (banner) banner.classList.remove('hidden');
+    });
+
+    function triggerInstall() {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          const banner = document.getElementById('pwaInstallBanner');
+          if (banner) banner.classList.add('hidden');
+        }
+        deferredPrompt = null;
+      });
+    }
+
+    // Détection iOS
+    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+    if (isIOSDevice && !isStandaloneMode) {
+      const banner = document.getElementById('pwaInstallBanner');
+      const installBtn = document.getElementById('pwaInstallBtn');
+      const installText = document.getElementById('pwaInstallText');
+      if (banner) banner.classList.remove('hidden');
+      if (installBtn) installBtn.classList.add('hidden');
+      if (installText) installText.innerText = 'Partager ⎋ puis "Sur l\'écran d\'accueil"';
+    }
   </script>
+
+  <!-- Bannière d'installation PWA mobile -->
+  <div id="pwaInstallBanner" class="hidden fixed bottom-16 sm:bottom-4 left-3 right-3 sm:left-auto sm:right-4 z-50 max-w-sm bg-slate-900 text-white p-3.5 rounded-2xl shadow-2xl border border-emerald-500/30 flex items-center justify-between gap-3">
+    <div class="flex items-center gap-2.5 min-w-0">
+      <img src="pastef-logo.png" alt="Pastef" class="w-10 h-10 object-contain rounded-xl bg-white p-1 flex-shrink-0">
+      <div class="min-w-0">
+        <p class="text-xs font-bold text-white truncate">Installer l'application</p>
+        <p id="pwaInstallText" class="text-[11px] text-slate-300 leading-tight">Accès direct sur l'écran d'accueil</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-1.5 flex-shrink-0">
+      <button id="pwaInstallBtn" onclick="triggerInstall()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow-sm transition active:scale-95">
+        Installer
+      </button>
+      <button onclick="document.getElementById('pwaInstallBanner').classList.add('hidden')" class="p-1 text-slate-400 hover:text-white rounded-lg transition" title="Fermer">
+        ✕
+      </button>
+    </div>
+  </div>
 </body>
 </html>

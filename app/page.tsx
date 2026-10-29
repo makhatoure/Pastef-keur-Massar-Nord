@@ -11,6 +11,7 @@ import EveningTab from '@/components/EveningTab';
 import StockTab from '@/components/StockTab';
 import ReportsTab from '@/components/ReportsTab';
 import AdminTab from '@/components/AdminTab';
+import InstallPrompt from '@/components/InstallPrompt';
 import { Loader2 } from 'lucide-react';
 
 export default function Home() {
@@ -193,6 +194,9 @@ export default function Home() {
         setActiveTab={setActiveTab}
         currentUser={currentUser}
       />
+
+      {/* Bannière et gestion de l'installation PWA */}
+      <InstallPrompt />
     </div>
   );
 }
