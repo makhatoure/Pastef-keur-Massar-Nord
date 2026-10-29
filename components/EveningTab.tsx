@@ -39,10 +39,12 @@ export default function EveningTab({
   const [isBulkMode, setIsBulkMode] = useState(false);
   const [bulkText, setBulkText] = useState('');
   const [bulkNeighborhood, setBulkNeighborhood] = useState('Serigne Mansour Sy 1');
+  const [customBulkNeighborhood, setCustomBulkNeighborhood] = useState('');
   const [bulkChief, setBulkChief] = useState('Maodo Ka');
   const [singleName, setSingleName] = useState('');
   const [singlePhone, setSinglePhone] = useState('');
   const [singleNeighborhood, setSingleNeighborhood] = useState('Serigne Mansour Sy 1');
+  const [customSingleNeighborhood, setCustomSingleNeighborhood] = useState('');
   const [singleChief, setSingleChief] = useState('Maodo Ka');
 
   // Modale de service au podium
@@ -169,8 +171,11 @@ export default function EveningTab({
       let payload: any = { adminName: currentUser?.name || 'Administrateur' };
 
       if (isBulkMode) {
+        const finalNeighborhood = bulkNeighborhood === 'Autre quartier' 
+          ? (customBulkNeighborhood.trim() || 'Autre quartier') 
+          : bulkNeighborhood;
+
         // Saisie groupée simplifiée : 1 ligne = 1 Nom et Prénom
-        // Optionnel : si l'utilisateur met une virgule, prend le téléphone en 2e élément
         const lines = bulkText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
         const beneficiariesList = lines.map(line => {
           let name = line;
@@ -185,16 +190,20 @@ export default function EveningTab({
           return {
             fullName: name,
             phone: phone,
-            neighborhood: bulkNeighborhood || 'Serigne Mansour Sy 1',
-            originChiefOrList: bulkChief.trim() || `Liste ${bulkNeighborhood}`,
+            neighborhood: finalNeighborhood,
+            originChiefOrList: bulkChief.trim() || `Liste ${finalNeighborhood}`,
           };
         });
         payload.beneficiaries = beneficiariesList;
       } else {
+        const finalNeighborhood = singleNeighborhood === 'Autre quartier'
+          ? (customSingleNeighborhood.trim() || 'Autre quartier')
+          : singleNeighborhood;
+
         payload.single = {
           fullName: singleName.trim() || 'Bénéficiaire sans nom',
           phone: singlePhone.trim() || 'Non renseigné',
-          neighborhood: singleNeighborhood.trim() || 'Serigne Mansour Sy 1',
+          neighborhood: finalNeighborhood,
           originChiefOrList: singleChief.trim() || 'Liste Chef de quartier',
         };
       }
@@ -723,7 +732,7 @@ export default function EveningTab({
               ) : (
                 <div className="space-y-2.5">
                   <div className="grid grid-cols-2 gap-2 bg-blue-50/60 p-2.5 rounded-xl border border-blue-200">
-                    <div>
+                    <div className="space-y-1.5">
                       <label className="block font-bold text-blue-900 mb-1">Quartier pour toute la liste *</label>
                       <select
                         value={bulkNeighborhood}
@@ -740,6 +749,20 @@ export default function EveningTab({
                           <option key={q} value={q}>{q}</option>
                         ))}
                       </select>
+
+                      {bulkNeighborhood === 'Autre quartier' && (
+                        <input
+                          type="text"
+                          required
+                          value={customBulkNeighborhood}
+                          onChange={e => {
+                            setCustomBulkNeighborhood(e.target.value);
+                            setBulkChief(`Liste ${e.target.value}`);
+                          }}
+                          placeholder="Tapez le nom du nouveau quartier..."
+                          className="w-full px-2.5 py-1.5 border-2 border-blue-400 rounded-lg text-xs bg-white font-bold text-blue-900 focus:outline-none"
+                        />
+                      )}
                     </div>
 
                     <div>
