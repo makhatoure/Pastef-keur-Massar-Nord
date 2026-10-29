@@ -54,30 +54,18 @@
       </div>
 
       <div class="p-6 space-y-4">
-        <div>
-          <p class="text-xs font-bold text-slate-600 mb-2">Choisir votre rôle :</p>
-          <div class="grid grid-cols-2 gap-2">
-            <button type="button" onclick="selectLogin('agent1', '1234')" id="btn-login-agent" class="p-3 rounded-2xl border-2 border-pastef-green bg-pastef-lightGreen text-left text-xs font-black text-pastef-darkGreen shadow-xs">
-              👤 Agent Terrain
-              <div class="text-[10px] text-slate-500 font-normal mt-0.5">Saisie rapide</div>
-            </button>
-            <button type="button" onclick="selectLogin('admin', '2026')" id="btn-login-admin" class="p-3 rounded-2xl border border-slate-200 bg-slate-50 text-left text-xs font-bold text-slate-700">
-              🛡️ Responsable
-              <div class="text-[10px] text-slate-500 font-normal mt-0.5">Gestion & Stock</div>
-            </button>
-          </div>
-        </div>
-
         <div id="loginError" class="hidden p-3 bg-pastef-lightRed border border-pastef-red text-pastef-red text-xs rounded-xl font-bold text-center"></div>
 
-        <form onsubmit="handleLoginSubmit(event)" class="space-y-3.5">
+        <form onsubmit="handleLoginSubmit(event)" class="space-y-4">
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Identifiant</label>
-            <input type="text" id="loginUsername" value="agent1" required class="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-pastef-green focus:outline-none">
+            <label class="block text-xs font-bold text-slate-700 mb-1">Votre nom complet / Prénom</label>
+            <input type="text" id="loginUsername" required placeholder="ex: Moussa Diop, Mariama Ba..." class="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-pastef-green focus:outline-none font-medium">
+            <p class="text-[10px] text-slate-400 mt-1">Saisissez votre vrai nom, il figurera sur vos saisies.</p>
           </div>
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Code PIN</label>
-            <input type="password" id="loginPin" value="1234" required class="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl font-mono tracking-widest focus:ring-2 focus:ring-pastef-green focus:outline-none text-center text-lg font-bold">
+            <label class="block text-xs font-bold text-slate-700 mb-1">Code d'accès secret</label>
+            <input type="password" id="loginPin" required placeholder="••••" autocomplete="current-password" class="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-xl font-mono tracking-widest focus:ring-2 focus:ring-pastef-green focus:outline-none text-center text-lg font-bold">
+            <p class="text-[10px] text-slate-400 mt-1">Le code secret définit vos droits d'accès.</p>
           </div>
           <button type="submit" id="loginBtn" class="w-full py-3.5 bg-pastef-green hover:bg-pastef-darkGreen active:scale-98 text-white font-black text-sm rounded-2xl shadow-md transition">
             Ouvrir la session
@@ -397,18 +385,47 @@
       const p = document.getElementById('loginPin').value.trim();
       const errDiv = document.getElementById('loginError');
 
-      const { data, error } = await db.from('users').select('*').eq('username', u).eq('pin', p).single();
-      if (error || !data) {
-        errDiv.innerText = "Identifiant ou code PIN incorrect";
+      if (!p) {
+        errDiv.innerText = "Veuillez saisir votre code d'accès secret.";
         errDiv.classList.remove('hidden');
         return;
       }
 
-      currentUser = data;
-      localStorage.setItem('pastef_user', JSON.stringify(data));
+      // Recherche de l'utilisateur par PIN
+      const { data, error } = await db.from('users').select('*').eq('pin', p);
+      if (error || !data || data.length === 0) {
+        errDiv.innerText = "Code d'accès incorrect.";
+        errDiv.classList.remove('hidden');
+        return;
+      }
+
+      let baseUser = data[0];
+      const match = data.find(user => (user.username || '').toLowerCase() === u.toLowerCase());
+      if (match) baseUser = match;
+
+      const displayName = u || baseUser.name || (baseUser.role === 'ADMIN' ? 'Administrateur' : 'Agent');
+
+      currentUser = {
+        id: baseUser.id,
+        username: u.toLowerCase() || baseUser.username,
+        name: displayName,
+        role: baseUser.role
+      };
+
+      try {
+        await db.from('audit_logs').insert([{
+          user_name: displayName,
+          action: 'CONNEXION',
+          details: `Connexion sous le profil ${baseUser.role} : ${displayName}`
+        }]);
+      } catch (logErr) {
+        console.warn('Audit log write error:', logErr);
+      }
+
+      localStorage.setItem('pastef_user', JSON.stringify(currentUser));
       applyUserRole();
       document.getElementById('loginModal').classList.add('hidden');
-      switchCircuit(data.role === 'ADMIN' ? 'stats' : 'morning');
+      switchCircuit(baseUser.role === 'ADMIN' ? 'stats' : 'morning');
       await loadAllData();
     }
 
