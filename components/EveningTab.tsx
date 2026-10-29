@@ -58,13 +58,14 @@ export default function EveningTab({
     }
   }, []);
 
-  // Chargement immédiat au montage et synchronisation avec les props
+  // Chargement immédiat au montage et synchronisation
   React.useEffect(() => {
     fetchLiveBeneficiaries();
   }, [fetchLiveBeneficiaries]);
 
+  // Si le parent passe une liste mise à jour (y compris vide après reset)
   React.useEffect(() => {
-    if (propBeneficiaries && propBeneficiaries.length > 0) {
+    if (propBeneficiaries) {
       setLocalBeneficiaries(propBeneficiaries);
     }
   }, [propBeneficiaries]);
