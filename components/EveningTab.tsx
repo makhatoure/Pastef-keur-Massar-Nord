@@ -334,9 +334,10 @@ export default function EveningTab({
 
       const data = await res.json();
       if (data.success) {
-        setSuccessMsg('Fiche mise à jour et tracée dans le journal.');
+        setSuccessMsg(data.message || 'Fiche mise à jour et tracée dans le journal.');
         setEditingBeneficiary(null);
         setEditReason('');
+        fetchLiveBeneficiaries();
         onRefresh();
       } else {
         setErrorMsg(data.message || 'Erreur modification');

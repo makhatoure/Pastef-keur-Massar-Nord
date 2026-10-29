@@ -108,3 +108,69 @@ export async function PUT(request: Request) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
+
+// Correction administrative d'une fiche (Admin)
+export async function PATCH(request: Request) {
+  try {
+    const body = await request.json();
+    const { id, fullName, phone, neighborhood, originChiefOrList, status, quantityGiven, reason, adminName } = body;
+
+    if (!id) {
+      return NextResponse.json({ success: false, message: 'ID manquant.' }, { status: 400 });
+    }
+
+    if (!reason || !reason.trim()) {
+      return NextResponse.json({ success: false, message: 'Le motif de modification est obligatoire pour l\'audit.' }, { status: 400 });
+    }
+
+    const { data: existing, error: fetchErr } = await supabase
+      .from('evening_beneficiaries')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchErr || !existing) {
+      return NextResponse.json({ success: false, message: 'Bénéficiaire introuvable.' }, { status: 404 });
+    }
+
+    const isResettingToPending = status === 'EN_ATTENTE';
+    const finalQuantity = isResettingToPending ? 0 : (parseInt(quantityGiven, 10) || 0);
+
+    const updatePayload: any = {
+      full_name: (fullName || existing.full_name).trim(),
+      phone: (phone || existing.phone).trim(),
+      neighborhood: (neighborhood || existing.neighborhood).trim(),
+      origin_chief_or_list: (originChiefOrList || existing.origin_chief_or_list).trim(),
+      status: status || existing.status,
+      quantity_given: finalQuantity,
+    };
+
+    if (isResettingToPending) {
+      updatePayload.served_at = null;
+      updatePayload.served_by = null;
+    }
+
+    const { error: updateErr } = await supabase
+      .from('evening_beneficiaries')
+      .update(updatePayload)
+      .eq('id', id);
+
+    if (updateErr) {
+      return NextResponse.json({ success: false, message: updateErr.message }, { status: 500 });
+    }
+
+    // Traçabilité obligatoire dans le journal d'audit
+    await supabase.from('audit_logs').insert([{
+      user_name: adminName || 'Administrateur',
+      action: 'CORRECTION_SOIR',
+      details: `Correction fiche ${existing.full_name} (${existing.phone}) -> Statut: ${status}, Quantité: ${finalQuantity}. Motif : ${reason.trim()}`,
+    }]);
+
+    return NextResponse.json({
+      success: true,
+      message: `Fiche mise à jour avec succès : ${isResettingToPending ? 'Remis en attente (stock restitué)' : 'Modifications enregistrées'}.`,
+    });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+  }
+}
